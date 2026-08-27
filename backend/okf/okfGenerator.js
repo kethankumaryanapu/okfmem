@@ -46,6 +46,9 @@ ${fact}
   const filePath = path.join(memoriesDir, `${slug}.md`);
   fs.writeFileSync(filePath, content, 'utf8');
 
+  // Synchronize OKF master index document (user-memory/index.md)
+  updateOKFIndex(title, slug, fact);
+
   // Relative path from backend directory
   const relativePath = path.relative(path.join(__dirname, '..'), filePath).replace(/\\/g, '/');
 
@@ -53,6 +56,35 @@ ${fact}
     path: relativePath,
     content: content
   };
+}
+
+/**
+ * Synchronizes backend/okf/user-memory/index.md by adding a link to the generated concept.
+ */
+function updateOKFIndex(title, slug, fact) {
+  const userMemoryDir = path.join(__dirname, 'user-memory');
+  if (!fs.existsSync(userMemoryDir)) {
+    fs.mkdirSync(userMemoryDir, { recursive: true });
+  }
+
+  const indexPath = path.join(userMemoryDir, 'index.md');
+  const relPath = `memories/${slug}.md`;
+  const entryLine = `* [${title}](${relPath})${fact ? ` - ${fact}` : ''}`;
+
+  let indexContent = '';
+  if (fs.existsSync(indexPath)) {
+    indexContent = fs.readFileSync(indexPath, 'utf8');
+  } else {
+    indexContent = `---\nokf_version: "0.2"\n---\n\n# User Memory\n\n`;
+  }
+
+  if (!indexContent.includes(`(${relPath})`)) {
+    if (!indexContent.endsWith('\n')) {
+      indexContent += '\n';
+    }
+    indexContent += `${entryLine}\n`;
+    fs.writeFileSync(indexPath, indexContent, 'utf8');
+  }
 }
 
 module.exports = {

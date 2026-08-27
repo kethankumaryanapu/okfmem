@@ -75,7 +75,7 @@ async function runTests() {
     console.log("AI Response:", res2.response);
     console.log("✔ Test 2 PASSED: Protected memory recalled with local restoration!");
 
-    console.log("\n[Test 3] OKF Concept File Generation & Synchronization Test");
+    console.log("\n[Test 3] OKF Concept File Generation & Index Synchronization Test");
     const sampleMemory = {
       id: "M099",
       title: "Vue.js Framework",
@@ -95,7 +95,25 @@ async function runTests() {
     if (!okfContent.includes("Vue.js Framework") || !okfContent.includes("User is learning Vue.js")) {
       throw new Error("Test 3 failed: OKF Markdown content missing expected frontmatter or title.");
     }
-    console.log("✔ Test 3 PASSED: OKF concept Markdown document generated and verified!");
+
+    // Verify index.md existence & entry link
+    const indexPath = path.resolve(__dirname, 'okf', 'user-memory', 'index.md');
+    if (!fs.existsSync(indexPath)) {
+      throw new Error("Test 3 failed: OKF index.md file does not exist.");
+    }
+    const indexContentBefore = fs.readFileSync(indexPath, 'utf8');
+    if (!indexContentBefore.includes("(memories/vue-js-framework.md)")) {
+      throw new Error("Test 3 failed: Generated OKF concept link missing from index.md.");
+    }
+
+    // Verify deduplication on re-generation
+    generateOKFConcept(sampleMemory);
+    const indexContentAfter = fs.readFileSync(indexPath, 'utf8');
+    const occurrences = (indexContentAfter.match(/\(memories\/vue-js-framework\.md\)/g) || []).length;
+    if (occurrences !== 1) {
+      throw new Error(`Test 3 failed: Duplicate link entries found in index.md (count: ${occurrences})`);
+    }
+    console.log("✔ Test 3 PASSED: OKF concept Markdown document generated, linked in index.md, and deduplicated!");
 
     console.log("\n[Test 4] Memory Extraction & Local Restoration on Masked Message");
     const extractionMsg = "I am currently learning Next.js and building a web application.";
