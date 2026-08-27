@@ -73,92 +73,7 @@ let chatHistory = [
 let activeMemoryId = "M001";
 let activeMemoryFilter = "All";
 
-let memories = [
-  {
-    id: "M001",
-    title: "Python",
-    fact: "User is learning Python.",
-    category: "Skill",
-    importance: "High",
-    confidence: "96%",
-    privacy: "Protected",
-    source: "Conversation",
-    created: "24 Aug 2026",
-    okfData: {
-      okf_version: "0.1-placeholder",
-      memory_id: "M001",
-      fact: "User is learning Python.",
-      category: "Skill",
-      provenance: {
-        source: "conversation",
-        created: "24 Aug 2026"
-      }
-    }
-  },
-  {
-    id: "M002",
-    title: "AI Project",
-    fact: "User is working on an AI project.",
-    category: "Project",
-    importance: "High",
-    confidence: "98%",
-    privacy: "Safe",
-    source: "Conversation",
-    created: "24 Aug 2026",
-    okfData: {
-      okf_version: "0.1-placeholder",
-      memory_id: "M002",
-      fact: "User is working on an AI project.",
-      category: "Project",
-      provenance: {
-        source: "conversation",
-        created: "24 Aug 2026"
-      }
-    }
-  },
-  {
-    id: "M003",
-    title: "Async Architecture",
-    fact: "User prefers async/await structures.",
-    category: "Preference",
-    importance: "Medium",
-    confidence: "92%",
-    privacy: "Safe",
-    source: "Conversation",
-    created: "23 Aug 2026",
-    okfData: {
-      okf_version: "0.1-placeholder",
-      memory_id: "M003",
-      fact: "User prefers async/await structures.",
-      category: "Preference",
-      provenance: {
-        source: "conversation",
-        created: "23 Aug 2026"
-      }
-    }
-  },
-  {
-    id: "M004",
-    title: "Stripe Credentials",
-    fact: "Stripe Sandbox API Key stored safely.",
-    category: "Auth",
-    importance: "High",
-    confidence: "100%",
-    privacy: "Protected",
-    source: "User Input",
-    created: "20 Aug 2026",
-    okfData: {
-      okf_version: "0.1-placeholder",
-      memory_id: "M004",
-      fact: "Stripe Sandbox API Key stored safely.",
-      category: "Auth",
-      provenance: {
-        source: "user_input",
-        created: "20 Aug 2026"
-      }
-    }
-  }
-];
+let memories = [];
 
 /* ==========================================================================
    Navigation Drawers & Modals Toggle
@@ -413,7 +328,7 @@ function openMemoryDetailById(id) {
   document.getElementById('detail-fact').textContent = m.fact;
   document.getElementById('detail-category').textContent = m.category;
   document.getElementById('detail-importance').textContent = m.importance;
-  document.getElementById('detail-confidence').textContent = m.confidence;
+  document.getElementById('detail-confidence').textContent = typeof m.confidence === 'number' ? `${m.confidence}%` : (m.confidence || '');
 
   const privEl = document.getElementById('detail-privacy');
   if (privEl) {
@@ -449,12 +364,26 @@ function deleteActiveMemory() {
 }
 
 /* OKF Representation Viewer */
-function openOKFViewerForMemoryId(id) {
+async function openOKFViewerForMemoryId(id) {
   activeMemoryId = id;
   const m = memories.find(item => item.id === id) || memories[0];
   const okfCode = document.getElementById('okf-json-code');
+
   if (okfCode && m) {
-    okfCode.textContent = JSON.stringify(m.okfData, null, 2);
+    const slug = (m.title || "python").toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'python';
+    const filename = `${slug}.md`;
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/okf/memories/${filename}`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: Failed to fetch OKF document`);
+      }
+      const markdownText = await response.text();
+      okfCode.textContent = markdownText;
+    } catch (error) {
+      console.error('Error fetching OKF document:', error);
+      okfCode.textContent = "Failed to load OKF document.";
+    }
   }
 
   closeMemoryModal();
@@ -477,6 +406,30 @@ function copyOKFJson() {
   if (code) {
     navigator.clipboard.writeText(code.textContent);
     triggerToast('OKF content copied to clipboard');
+  }
+}
+
+/* Export OKF Knowledge Bundle */
+async function exportOKFBundle() {
+  try {
+    const response = await fetch('http://localhost:5000/api/okf/export');
+    if (!response.ok) {
+      throw new Error(`HTTP error status: ${response.status}`);
+    }
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = 'okfmem-user-memory.zip';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    triggerToast('OKF Memory bundle exported');
+  } catch (error) {
+    console.error('Failed to export OKF bundle:', error);
+    triggerToast('Export failed');
   }
 }
 
@@ -570,11 +523,7 @@ function submitMessage() {
 
   scrollToBottom();
 
-  setTimeout(() => {
-    if (loader) loader.style.display = 'none';
-    generateAIResponse(text, currentChat);
-    scrollToBottom();
-  }, 700);
+  generateAIResponse(text, currentChat);
 }
 
 function renderUserMessage(text, timeStr = '') {
@@ -595,37 +544,53 @@ function renderUserMessage(text, timeStr = '') {
   container.appendChild(msgDiv);
 }
 
-function generateAIResponse(userText, currentChatObj) {
+async function generateAIResponse(userText, currentChatObj) {
   const container = document.getElementById('messages-container');
   if (!container) return;
 
+  const loader = document.getElementById('typing-indicator');
+  if (loader) loader.style.display = 'flex';
+  scrollToBottom();
+
   const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  const lower = userText.toLowerCase();
-
   let responseText = "";
-  let memoryPillText = null;
 
-  if (lower.includes('python') || lower.includes('learning')) {
-    responseText = "I recall that you are learning Python and asynchronous programming. Important context from our discussion is saved in long-term memory.";
-    memoryPillText = "Applied Memory: Learning Python";
-  } else if (lower.includes('remember') || lower.includes('profile') || lower.includes('skills')) {
-    responseText = `Based on your stored memories, I remember:\n• Skill: User is learning Python\n• Project: User is working on an AI project\n• Preference: User prefers async/await structures\n• Auth: Stripe Sandbox Credentials`;
-    memoryPillText = `Applied Memory: Profile Memories (${memories.length})`;
-  } else {
-    responseText = `I have received your message: "${userText}". Important context is extracted and processed into privacy-aware long-term memory.`;
-    memoryPillText = "Applied Memory: Active Context";
+  try {
+    const res = await fetch('http://localhost:5000/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: userText })
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success && data.response) {
+      responseText = data.response;
+      if (Array.isArray(data.extracted_memories) && data.extracted_memories.length > 0) {
+        await fetchMemories();
+        const titles = data.extracted_memories.map(m => m.title).join(', ');
+        triggerToast(`Memory extracted: ${titles}`);
+      } else {
+        await fetchMemories();
+      }
+    } else {
+      responseText = `Error: ${data.error || 'Failed to process chat message'}`;
+    }
+  } catch (err) {
+    responseText = "Error: Unable to connect to backend MemPrivacy chat pipeline.";
+  } finally {
+    if (loader) loader.style.display = 'none';
   }
 
   if (currentChatObj) {
     currentChatObj.messages.push({
       sender: 'assistant',
       text: responseText,
-      time: timeStr,
-      memoryPill: memoryPillText
+      time: timeStr
     });
   }
 
-  renderAssistantMessage(responseText, timeStr, memoryPillText);
+  renderAssistantMessage(responseText, timeStr);
+  scrollToBottom();
 }
 
 function renderAssistantMessage(responseText, timeStr, memoryPillText) {
@@ -685,8 +650,41 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// Backend Health Check
+async function checkBackendHealth() {
+  try {
+    const response = await fetch('http://localhost:5000/api/health');
+    if (!response.ok) {
+      throw new Error(`HTTP error status: ${response.status}`);
+    }
+    const data = await response.json();
+    console.log(data);
+  } catch (error) {
+    console.error('Failed to connect to OKFMem backend:', error);
+  }
+}
+
+// Fetch Memories from Backend
+async function fetchMemories() {
+  try {
+    const response = await fetch('http://localhost:5000/api/memories');
+    if (!response.ok) {
+      throw new Error(`HTTP error status: ${response.status}`);
+    }
+    const data = await response.json();
+    if (data && data.success && Array.isArray(data.memories)) {
+      memories = data.memories;
+      renderMemoryList();
+    }
+  } catch (error) {
+    console.error('Failed to fetch memories from backend:', error);
+  }
+}
+
 // Initialize on page load
 window.addEventListener('DOMContentLoaded', () => {
   renderHistoryList();
   renderMemoryList();
+  checkBackendHealth();
+  fetchMemories();
 });

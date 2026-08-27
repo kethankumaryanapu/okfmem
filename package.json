@@ -1,0 +1,25 @@
+{
+  "name": "okfmem",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "start": "serve -p 3000",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kethankumaryanapu/okfmem.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/kethankumaryanapu/okfmem/issues"
+  },
+  "homepage": "https://github.com/kethankumaryanapu/okfmem#readme",
+  "devDependencies": {
+    "serve": "^14.2.6"
+  }
+}

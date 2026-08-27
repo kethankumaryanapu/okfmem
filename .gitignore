@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+backend/node_modules/
+
+# MemPrivacy Runtime & Local SQLite Database
+*.db
+*.sqlite
+backend/memprivacy/privacy_store.db
+backend/memprivacy/*.db
+backend/memprivacy/*.sqlite
+__pycache__/
+*.pyc
+
+# Temporary Archives & Logs
+*.zip
+scratch/
