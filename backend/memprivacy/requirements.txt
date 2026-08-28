@@ -15,3 +15,4 @@ litellm>=1.82.1,<2.0.0
 memobase>=0.0.24,<0.0.40
 vllm
 transformers
+google-genai>=0.1.0

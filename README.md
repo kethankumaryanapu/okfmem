@@ -1,29 +1,55 @@
-# OKFMem Setup
+# OKFMem — AI Chatbot with Smart Long-Term Memory & MemPrivacy
 
-## 1. Clone the repository
+OKFMem is a privacy-preserving personal memory manager and AI assistant interface supporting the Open Knowledge Format (OKF v0.2) standard.
 
-git clone <your-github-repository-url>
-cd OKFMEM
+## Features
 
-## 2. Install Node dependencies
+- **MemPrivacy Boundary**: On-device privacy detection and typed placeholder replacement (PL2–PL4 taxonomy).
+- **Google Gemini API Integration**: Native support for Google Gemini (`gemini-2.5-flash`) with automatic local unmasking.
+- **Offline Deterministic Fallback**: Automatic fallback when no API key is provided.
+- **Adaptive Memory Importance**: Memory relevance promotion based on mention counts.
+- **OKF Concept Synchronization**: Automatic Markdown concept generation and `user-memory/index.md` linking.
 
-npm install
+## Quickstart & Gemini Setup
+
+### 1. Install Dependencies
+
+```bash
 cd backend
+pip install -r memprivacy/requirements.txt
 npm install
-cd ..
+```
 
-## 3. Install Python dependencies
+### 2. Configure Environment Variables
 
-cd backend/memprivacy
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-cd ../..
+For Windows PowerShell:
 
-## 4. Start backend
+```powershell
+$env:GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
+$env:GEMINI_MODEL="gemini-2.5-flash"  # Optional, default is gemini-2.5-flash
+```
 
-node backend/server.js
+Or copy `.env.example` for reference:
 
-## 5. Open the frontend
+```bash
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-2.5-flash
+```
 
-Open index.html using VS Code Live Server.
+> **Note**: Do not commit real API keys to repository. `.env` is listed in `.gitignore`.
+
+### 3. Run Backend Server
+
+```bash
+cd backend
+npm start
+```
+
+### 4. Run Integration Tests
+
+```powershell
+cd backend
+node .\test_task10.js
+node .\test_task11.js
+node .\test_task12.js
+```

@@ -304,7 +304,8 @@ app.post('/api/chat', async (req, res) => {
     res.json({
       success: true,
       response: result.response,
-      extracted_memories: createdMemories
+      extracted_memories: createdMemories,
+      provider: result.provider || 'offline'
     });
   } catch (error) {
     res.status(500).json({

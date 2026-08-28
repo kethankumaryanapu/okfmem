@@ -84,7 +84,7 @@ def extract_mem_privacy_taxonomy_items(text: str) -> list:
                 })
 
     # 3. Phone Number (PL2)
-    phone_matches = re.findall(r'\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b', text)
+    phone_matches = re.findall(r'\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?(?:\d{3}[-.\s]?)?\d{4}\b', text)
     for phone in phone_matches:
         items.append({
             "original_text": phone,
@@ -256,14 +256,59 @@ def format_memories_for_context(memories_list: list, store: PrivacyStore, mask_l
 
     return "Known User Memories (Use these facts to answer questions when relevant):\n" + "\n".join(context_lines)
 
-def generate_ai_chat_response(masked_text: str, config: dict, has_llm_config: bool, memory_context: str = "") -> str:
+def generate_ai_chat_response(masked_text: str, config: dict, has_llm_config: bool, memory_context: str = "") -> tuple:
     """
-    AI Processing Step:
-    Sends ONLY the masked text and privacy-masked memory context to the AI model.
+    AI Processing Step (Task 12 Gemini Integration):
+    Sends ONLY the masked text and privacy-masked memory context to the AI model (Gemini or fallback).
+    Returns tuple: (masked_response_text, provider_name)
     """
     system_prompt = "You are an intelligent, helpful AI assistant. Answer user questions directly and concisely using the provided user memories when relevant."
     if memory_context:
         system_prompt += "\n\n" + memory_context
+
+    gemini_api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    gemini_model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash").strip() or "gemini-2.5-flash"
+
+    # Task 12: Real Google Gemini API Provider
+    if gemini_api_key:
+        try:
+            # 1. Try official google-genai Python SDK
+            try:
+                from google import genai
+                from google.genai import types
+                client = genai.Client(api_key=gemini_api_key)
+                response = client.models.generate_content(
+                    model=gemini_model,
+                    contents=masked_text,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_prompt,
+                    )
+                )
+                if response and hasattr(response, 'text') and response.text:
+                    return response.text.strip(), "gemini"
+            except ImportError:
+                pass
+
+            # 2. Direct HTTP REST API fallback for Gemini
+            import urllib.request
+            import json
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{gemini_model}:generateContent?key={gemini_api_key}"
+            headers = {"Content-Type": "application/json"}
+            payload = {
+                "contents": [{"parts": [{"text": masked_text}]}],
+                "systemInstruction": {"parts": [{"text": system_prompt}]}
+            }
+            req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers, method='POST')
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                res_data = json.loads(resp.read().decode('utf-8'))
+                candidates = res_data.get("candidates", [])
+                if candidates:
+                    parts = candidates[0].get("content", {}).get("parts", [])
+                    if parts:
+                        return parts[0].get("text", "").strip(), "gemini"
+            raise RuntimeError("Gemini API returned an empty or invalid response payload.")
+        except Exception as e:
+            raise RuntimeError(f"Gemini API provider error: {str(e)}")
 
     if has_llm_config:
         try:
@@ -281,17 +326,18 @@ def generate_ai_chat_response(masked_text: str, config: dict, has_llm_config: bo
                 ],
                 temperature=0.7
             )
-            return response.choices[0].message.content.strip()
+            return response.choices[0].message.content.strip(), "openai"
         except Exception as e:
             raise RuntimeError(f"AI Provider error: {str(e)}")
+
+    # Offline response generation with Memory Recall
+    if memory_context:
+        lines = [l for l in memory_context.splitlines() if l.startswith("- [")]
+        memory_summary = "; ".join(lines)
+        return f"I have received your message: \"{masked_text}\". Based on your saved memories ({memory_summary}), I can assist you with your request.", "offline"
     else:
-        # Offline response generation with Memory Recall
-        if memory_context:
-            lines = [l for l in memory_context.splitlines() if l.startswith("- [")]
-            memory_summary = "; ".join(lines)
-            return f"I have received your message: \"{masked_text}\". Based on your saved memories ({memory_summary}), I can assist you with your request."
-        else:
-            return f"I have received your message: \"{masked_text}\". I will assist you with this request while ensuring your sensitive information remains protected."
+        return f"I have received your message: \"{masked_text}\". I will assist you with this request while ensuring your sensitive information remains protected.", "offline"
+
 
 def process_text(text: str) -> dict:
     """
@@ -518,7 +564,7 @@ def process_chat(text: str, memories_list: list = None) -> dict:
         memory_context = format_memories_for_context(memories_list, store, mask_levels, user_text=masked_text)
 
         # Step 3: AI Processing (Receives ONLY masked_text and privacy-masked memory context)
-        ai_masked_response = generate_ai_chat_response(masked_text, cloud_config, has_cloud_llm, memory_context)
+        ai_masked_response, provider = generate_ai_chat_response(masked_text, cloud_config, has_cloud_llm, memory_context)
 
         # Step 4: MemPrivacy Restoration for Chat Response
         restored_response = unmask_dialogue(ai_masked_response, store)
@@ -532,12 +578,14 @@ def process_chat(text: str, memories_list: list = None) -> dict:
             cloud_config=cloud_config
         )
 
-        # Return clean response and extracted memories
+        # Return clean response, extracted memories, and provider status
         return {
             "success": True,
             "response": restored_response,
-            "extracted_memories": extracted_memories
+            "extracted_memories": extracted_memories,
+            "provider": provider
         }
+
     except Exception as err:
         sys.stderr.write(f"[MemPrivacy Chat Error] {str(err)}\n")
         return {
