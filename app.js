@@ -381,8 +381,27 @@ async function openOKFViewerForMemoryId(id) {
       const markdownText = await response.text();
       okfCode.textContent = markdownText;
     } catch (error) {
-      console.error('Error fetching OKF document:', error);
-      okfCode.textContent = "Failed to load OKF document.";
+      console.warn('Backend OKF file fetch fallback triggered for:', filename);
+      const conceptType = `User ${m.category || 'Skill'}`;
+      const title = m.title || 'Untitled Memory';
+      const fact = m.fact || '';
+      const tagSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const catSlug = (m.category || 'skill').toLowerCase();
+      
+      const fallbackMarkdown = `---
+type: ${conceptType}
+title: ${title}
+description: ${fact}
+tags:
+  - ${tagSlug}
+  - ${catSlug}
+---
+
+# ${title}
+
+${fact}`;
+
+      okfCode.textContent = fallbackMarkdown;
     }
   }
 
@@ -466,6 +485,7 @@ function teachNewFact() {
   if (input) {
     input.value = "I am currently learning Python and asynchronous programming.";
     input.focus();
+    autoResizePromptInput();
     triggerToast("Sample fact loaded in prompt field");
   }
 }
@@ -474,11 +494,20 @@ function sendSuggestedPrompt(text) {
   const input = document.getElementById('prompt-input');
   if (input) {
     input.value = text;
+    autoResizePromptInput();
     submitMessage();
   }
 }
 
+function autoResizePromptInput() {
+  const input = document.getElementById('prompt-input');
+  if (!input) return;
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+}
+
 function handleKeyDown(e) {
+  autoResizePromptInput();
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
     submitMessage();
@@ -493,6 +522,7 @@ function submitMessage() {
   if (!text) return;
 
   input.value = '';
+  input.style.height = 'auto';
 
   const welcome = document.getElementById('welcome-state');
   if (welcome) welcome.style.display = 'none';
@@ -687,4 +717,9 @@ window.addEventListener('DOMContentLoaded', () => {
   renderMemoryList();
   checkBackendHealth();
   fetchMemories();
+
+  const promptInput = document.getElementById('prompt-input');
+  if (promptInput) {
+    promptInput.addEventListener('input', autoResizePromptInput);
+  }
 });

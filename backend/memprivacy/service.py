@@ -187,21 +187,37 @@ def retrieve_relevant_memories(user_text: str, memories_list: list, top_k: int =
         title = str(mem.get("title", "")).lower()
         fact = str(mem.get("fact", "")).lower()
         category = str(mem.get("category", "")).lower()
-
         text_block = f"{title} {fact} {category}"
-        score = 0
+
+        # Primary Signal: Keyword relevance (title matches +3, fact matches +2, category matches +1)
+        keyword_score = 0
         for term in query_terms:
             if term in text_block:
-                score += 3 if term in title else (2 if term in fact else 1)
+                keyword_score += 3 if term in title else (2 if term in fact else 1)
 
-        if mem.get("importance", "").lower() == "high":
-            score += 0.5
+        # Secondary Adaptive Signal: Importance weight (High: +0.5, Medium: +0.25, Low: +0.1)
+        importance_str = str(mem.get("importance", "Medium")).lower()
+        if importance_str == "high":
+            importance_bonus = 0.5
+        elif importance_str == "medium":
+            importance_bonus = 0.25
+        else:
+            importance_bonus = 0.1
 
-        scored_memories.append((score, mem))
+        # Secondary Adaptive Signal: Mention count bonus (+0.1 per additional mention up to +0.3)
+        try:
+            mention_count = int(mem.get("mention_count", 1) or 1)
+        except (ValueError, TypeError):
+            mention_count = 1
+        mention_bonus = min(max(mention_count - 1, 0) * 0.1, 0.3)
+
+        total_score = keyword_score + importance_bonus + mention_bonus
+        scored_memories.append((total_score, mem))
 
     scored_memories.sort(key=lambda x: x[0], reverse=True)
 
-    positive_matches = [mem for score, mem in scored_memories if score > 0]
+    # Filter positive keyword matches first if query terms exist
+    positive_matches = [mem for score, mem in scored_memories if score >= 1.0]
     if positive_matches:
         return positive_matches[:top_k]
 

@@ -205,6 +205,30 @@ function getFormattedDate() {
   return `${day} ${month} ${year}`;
 }
 
+function updateMemoryInteraction(mem) {
+  mem.mention_count = (mem.mention_count || 1) + 1;
+  mem.last_seen = getFormattedDate();
+
+  // Task 11 Adaptive Importance Promotion Rules:
+  // - Low + mention_count >= 2 -> Medium
+  // - Medium + mention_count >= 3 -> High
+  // - High remains High
+  const currentImp = (mem.importance || 'Medium').trim().toLowerCase();
+  if (currentImp === 'low' && mem.mention_count >= 2) {
+    mem.importance = 'Medium';
+  } else if (currentImp === 'medium' && mem.mention_count >= 3) {
+    mem.importance = 'High';
+  }
+
+  try {
+    generateOKFConcept(mem);
+  } catch (okfErr) {
+    console.error(`Failed to update OKF concept for memory ${mem.id}:`, okfErr);
+  }
+
+  return mem;
+}
+
 app.post('/api/chat', async (req, res) => {
   try {
     const { text, message } = req.body || {};
@@ -231,13 +255,16 @@ app.post('/api/chat', async (req, res) => {
         if (!normTitle && !normFact) continue;
 
         // Check for duplicates in existing memories array
-        const isDuplicate = memories.some(m => {
+        const existingMem = memories.find(m => {
           const mTitle = (m.title || '').trim().toLowerCase();
           const mFact = (m.fact || '').trim().toLowerCase();
           return (normTitle && mTitle === normTitle) || (normFact && mFact === normFact);
         });
 
-        if (!isDuplicate) {
+        if (existingMem) {
+          // Task 11: Increment mention_count, update last_seen, promote importance if threshold reached
+          updateMemoryInteraction(existingMem);
+        } else {
           const maxNum = memories.reduce((max, item) => {
             const num = parseInt((item.id || '').replace(/^M0*/, ''), 10);
             return !isNaN(num) && num > max ? num : max;
@@ -254,7 +281,9 @@ app.post('/api/chat', async (req, res) => {
             confidence: typeof cand.confidence === 'number' ? cand.confidence : 94,
             privacy: cand.privacy || 'Safe',
             source: 'Conversation',
-            created: getFormattedDate()
+            created: getFormattedDate(),
+            mention_count: 1,
+            last_seen: getFormattedDate()
           };
 
           memories.push(newMem);
@@ -269,9 +298,7 @@ app.post('/api/chat', async (req, res) => {
         }
       }
 
-      if (createdMemories.length > 0) {
-        saveMemories(memories);
-      }
+      saveMemories(memories);
     }
 
     res.json({

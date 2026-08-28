@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OKFMem — AI Memory Management System</title>
   <meta name="description" content="Intelligent AI Memory Management Chatbot powered by OKF and MemPrivacy">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -12,7 +15,7 @@
   <!-- Full Viewport Chatbot Shell -->
   <div class="app-shell">
 
-    <!-- Top Minimal Navigation Header -->
+    <!-- Top Navigation Header -->
     <header class="chatbot-header">
       <div class="brand-group">
         <img src="logo.png" alt="OKFMem Logo" class="brand-logo">
@@ -28,16 +31,17 @@
       </div>
 
       <div class="header-actions">
-        <!-- Privacy Indicator -->
-        <div class="privacy-indicator" title="Privacy Protected Memory System">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--status-success);"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        <!-- Privacy Shield Indicator -->
+        <div class="privacy-indicator" title="MemPrivacy Active • Data Shielding Enabled">
+          <span class="privacy-indicator-dot"></span>
           <span>Privacy Protected</span>
         </div>
 
-        <!-- Compact Memory Badge Trigger -->
+        <!-- Memory Access Badge Trigger -->
         <button class="memory-access-badge" id="btn-memory-drawer" onclick="toggleMemoryDrawer()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
-          <span>Memory · <span id="memory-badge-count">4</span></span>
+          <span>Memory</span>
+          <span class="memory-badge-counter" id="memory-badge-count">3</span>
         </button>
 
         <button class="btn btn-ghost btn-icon" id="btn-settings-modal" onclick="openSettingsModal()" title="Settings">
@@ -57,29 +61,33 @@
     <main class="chatbot-main">
       <div class="chat-scroll-container" id="chat-stream">
         
-        <!-- Welcome / Initial State (Visible when no conversation exists) -->
+        <!-- Welcome / Initial Hero State -->
         <div class="chat-welcome-state" id="welcome-state">
           <div class="welcome-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
           </div>
           <h1 class="welcome-title">How can OKFMem assist you today?</h1>
           <p class="welcome-subtitle">
-            An AI chatbot with intelligent, privacy-aware long-term memory.
+            An AI chatbot with intelligent, privacy-aware long-term memory powered by Open Knowledge Format (OKF) & MemPrivacy.
           </p>
 
           <div class="welcome-suggestions">
             <div class="suggestion-card" onclick="sendSuggestedPrompt('What skills and preferences do you remember about me?')">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-top: 2px; color: var(--red-accent);"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              <div class="suggestion-icon-wrapper">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              </div>
               <div>
-                <strong style="color: var(--text-primary); display: block;">Recall My Profile</strong>
+                <strong style="color: var(--text-primary); display: block; margin-bottom: 2px;">Recall My Profile</strong>
                 <span>"What skills and preferences do you remember about me?"</span>
               </div>
             </div>
 
             <div class="suggestion-card" onclick="teachNewFact()">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-top: 2px; color: var(--red-accent);"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <div class="suggestion-icon-wrapper">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </div>
               <div>
-                <strong style="color: var(--text-primary); display: block;">Teach New Fact</strong>
+                <strong style="color: var(--text-primary); display: block; margin-bottom: 2px;">Teach New Fact</strong>
                 <span>"I am currently learning Python and asynchronous programming."</span>
               </div>
             </div>
@@ -87,7 +95,7 @@
         </div>
 
         <!-- Dynamic Messages Will Render Here -->
-        <div id="messages-container" style="display: flex; flex-direction: column; gap: 18px; width: 100%;"></div>
+        <div id="messages-container" style="display: flex; flex-direction: column; gap: 20px; width: 100%;"></div>
 
         <!-- Loading / Thinking Indicator -->
         <div class="loading-indicator" id="typing-indicator" style="display: none;">
@@ -102,10 +110,13 @@
       <!-- Floating Prompt Input Bar at Bottom -->
       <div class="prompt-bar-wrapper">
         <div class="prompt-bar-inner">
-          <textarea class="prompt-input" id="prompt-input" rows="1" placeholder="Message OKFMem..." onkeydown="handleKeyDown(event)"></textarea>
-          <button class="btn btn-primary" id="btn-send" onclick="submitMessage()" title="Send Message">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-          </button>
+          <textarea class="prompt-input" id="prompt-input" rows="1" placeholder="Message OKFMem with memory context..." onkeydown="handleKeyDown(event)"></textarea>
+          <div class="prompt-actions">
+            <span class="shortcut-hint">Enter ↵</span>
+            <button class="btn btn-primary" id="btn-send" onclick="submitMessage()" title="Send Message">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            </button>
+          </div>
         </div>
       </div>
     </main>
@@ -117,7 +128,7 @@
   <aside class="side-drawer left-drawer" id="history-drawer">
     <div class="drawer-header">
       <div class="drawer-title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
         <span>Chat History</span>
       </div>
       <button class="btn btn-icon" onclick="toggleHistoryDrawer()" style="padding: 4px;">
@@ -140,13 +151,13 @@
   <aside class="side-drawer right-drawer" id="memory-drawer">
     <div class="drawer-header">
       <div class="drawer-title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
         <span>My Memories</span>
       </div>
       <div style="display: flex; gap: 6px; align-items: center;">
         <button class="btn btn-ghost btn-xs" id="btn-export-okf" onclick="exportOKFBundle()" title="Export OKF Memory Bundle">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          <span>Export</span>
+          <span>Export Bundle</span>
         </button>
         <button class="btn btn-icon" onclick="toggleMemoryDrawer()" style="padding: 4px;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -164,7 +175,7 @@
       <button class="filter-pill" onclick="setMemoryFilter('Skill', this)">Skill</button>
       <button class="filter-pill" onclick="setMemoryFilter('Project', this)">Project</button>
       <button class="filter-pill" onclick="setMemoryFilter('Preference', this)">Preference</button>
-      <button class="filter-pill" onclick="setMemoryFilter('Auth', this)">Auth</button>
+      <button class="filter-pill" onclick="setMemoryFilter('Fact', this)">Fact</button>
     </div>
 
     <div class="drawer-body" id="drawer-memory-list">
@@ -176,7 +187,7 @@
   <div class="modal-backdrop" id="memory-modal" onclick="closeMemoryModal(event)">
     <div class="modal-card" onclick="event.stopPropagation()">
       <div class="modal-card-header">
-        <div class="modal-card-title">Memory</div>
+        <div class="modal-card-title">Memory Record Details</div>
         <button class="btn btn-icon" onclick="closeMemoryModal()" style="padding: 4px;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
@@ -184,7 +195,7 @@
 
       <div class="modal-card-body">
         <div class="detail-field-group">
-          <span class="detail-label">Fact:</span>
+          <span class="detail-label">Fact Statement:</span>
           <span class="detail-value" id="detail-fact">User is learning Python</span>
         </div>
 
@@ -201,11 +212,11 @@
 
         <div class="detail-grid-2">
           <div class="detail-field-group">
-            <span class="detail-label">Confidence:</span>
+            <span class="detail-label">Confidence Score:</span>
             <span class="detail-value" id="detail-confidence" style="font-family: var(--font-mono);">96%</span>
           </div>
           <div class="detail-field-group">
-            <span class="detail-label">Privacy:</span>
+            <span class="detail-label">MemPrivacy Boundary:</span>
             <span class="detail-value" id="detail-privacy">
               <span class="privacy-badge state-safe">Protected</span>
             </span>
@@ -214,11 +225,11 @@
 
         <div class="detail-grid-2">
           <div class="detail-field-group">
-            <span class="detail-label">Source:</span>
+            <span class="detail-label">Provenance Source:</span>
             <span class="detail-value" id="detail-source">Conversation</span>
           </div>
           <div class="detail-field-group">
-            <span class="detail-label">Created:</span>
+            <span class="detail-label">Recorded Date:</span>
             <span class="detail-value" id="detail-created" style="color: var(--text-secondary);">24 Aug 2026</span>
           </div>
         </div>
@@ -228,7 +239,7 @@
         <div style="display: flex; gap: 8px;">
           <button class="btn btn-secondary btn-sm" onclick="openOKFViewerForActiveMemory()" title="View structured OKF representation">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
-            <span>View OKF</span>
+            <span>View OKF Spec</span>
           </button>
         </div>
         <div style="display: flex; gap: 8px;">
@@ -244,7 +255,7 @@
     <div class="modal-card modal-card-lg" onclick="event.stopPropagation()">
       <div class="modal-card-header">
         <div class="modal-card-title">
-          <span>[ OKF Representation ]</span>
+          <span>[ Open Knowledge Format (OKF) Spec ]</span>
         </div>
         <button class="btn btn-icon" onclick="closeOKFModal()" style="padding: 4px;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -253,72 +264,20 @@
 
       <div class="modal-card-body">
         <div class="okf-notice-banner">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-secondary); flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-          <span>Placeholder OKF representation. The verified Open Knowledge Format specification will be connected via backend integration.</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--amber-primary); flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          <span>Open Knowledge Format Specification 0.1 document synchronized with OKFMem backend storage.</span>
         </div>
         <div class="okf-json-box">
-          <pre><code id="okf-json-code">{
-  "okf_version": "0.1-placeholder",
-  "memory_id": "M001",
-  "fact": "User is learning Python",
-  "category": "Skill",
-  "provenance": {
-    "source": "conversation",
-    "created": "24 Aug 2026"
-  }
-}</code></pre>
+          <pre><code id="okf-json-code">Loading OKF document representation...</code></pre>
         </div>
       </div>
 
       <div class="modal-card-footer">
         <button class="btn btn-ghost btn-sm" onclick="copyOKFJson()">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-          <span>Copy</span>
+          <span>Copy OKF</span>
         </button>
         <button class="btn btn-secondary btn-sm" onclick="closeOKFModal()">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Edit Memory Modal -->
-  <div class="modal-backdrop" id="edit-memory-modal" onclick="closeEditMemoryModal(event)">
-    <div class="modal-card" onclick="event.stopPropagation()">
-      <div class="modal-card-header">
-        <div class="modal-card-title">Edit Memory Record</div>
-        <button class="btn btn-icon" onclick="closeEditMemoryModal()" style="padding: 4px;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-        </button>
-      </div>
-
-      <div class="modal-card-body">
-        <div class="form-group">
-          <label class="form-label" for="edit-fact-input">Memory Fact</label>
-          <input type="text" class="form-input" id="edit-fact-input">
-        </div>
-
-        <div class="detail-grid-2">
-          <div class="form-group">
-            <label class="form-label" for="edit-category-select">Category</label>
-            <select class="form-select" id="edit-category-select">
-              <option value="Skills">Skills</option>
-              <option value="Interests">Interests</option>
-              <option value="Preferences">Preferences</option>
-              <option value="Authentication">Authentication</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="edit-privacy-select">Privacy</label>
-            <select class="form-select" id="edit-privacy-select">
-              <option value="Safe">Safe</option>
-              <option value="Requires Permission">Requires Permission</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div class="modal-card-footer">
-        <button class="btn btn-ghost btn-sm" onclick="closeEditMemoryModal()">Cancel</button>
-        <button class="btn btn-primary btn-sm" onclick="saveMemoryEdit()">Save Changes</button>
       </div>
     </div>
   </div>
@@ -327,7 +286,7 @@
   <div class="modal-backdrop" id="settings-modal" onclick="closeSettingsModal(event)">
     <div class="modal-card modal-card-lg" onclick="event.stopPropagation()">
       <div class="modal-card-header">
-        <div class="modal-card-title">Settings</div>
+        <div class="modal-card-title">OKFMem System Settings</div>
         <button class="btn btn-icon" onclick="closeSettingsModal()" style="padding: 4px;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
@@ -338,8 +297,8 @@
           <button class="settings-nav-item active" onclick="switchSettingsTab('account', this)">Account</button>
           <button class="settings-nav-item" onclick="switchSettingsTab('theme', this)">Theme</button>
           <button class="settings-nav-item" onclick="switchSettingsTab('notifications', this)">Notifications</button>
-          <button class="settings-nav-item" onclick="switchSettingsTab('memory', this)">Memory Settings</button>
-          <button class="settings-nav-item" onclick="switchSettingsTab('privacy', this)">Privacy Settings</button>
+          <button class="settings-nav-item" onclick="switchSettingsTab('memory', this)">Memory Pipeline</button>
+          <button class="settings-nav-item" onclick="switchSettingsTab('privacy', this)">MemPrivacy</button>
         </nav>
 
         <div class="settings-content">
@@ -363,11 +322,11 @@
 
           <!-- Theme Tab -->
           <div class="settings-panel" id="tab-theme">
-            <h3 class="panel-title">Appearance</h3>
+            <h3 class="panel-title">Appearance & Color Theme</h3>
             <div class="setting-row">
               <div>
                 <strong class="setting-name">Color Mode</strong>
-                <span class="setting-desc">Deep Obsidian Dark Theme (#0D0D0D)</span>
+                <span class="setting-desc">Obsidian Charcoal Glassmorphism Theme (#080B10)</span>
               </div>
               <span class="privacy-badge state-safe">Active</span>
             </div>
@@ -378,7 +337,7 @@
             <h3 class="panel-title">Notifications</h3>
             <div class="setting-row">
               <div>
-                <strong class="setting-name">Memory Extraction Alerts</strong>
+                <strong class="setting-name">Memory Extraction Toast Alerts</strong>
                 <span class="setting-desc">Notify when new long-term facts are recorded</span>
               </div>
               <input type="checkbox" checked class="toggle-checkbox" onchange="triggerToast('Notification setting updated')">
@@ -405,11 +364,11 @@
 
           <!-- Privacy Settings Tab -->
           <div class="settings-panel" id="tab-privacy">
-            <h3 class="panel-title">Privacy & Security</h3>
+            <h3 class="panel-title">MemPrivacy & Security Boundary</h3>
             <div class="setting-row">
               <div>
                 <strong class="setting-name">MemPrivacy Protection</strong>
-                <span class="setting-desc">Require authorization before recalling sensitive data</span>
+                <span class="setting-desc">Require authorization & local masking for sensitive data</span>
               </div>
               <input type="checkbox" checked class="toggle-checkbox" onchange="triggerToast('MemPrivacy policy updated')">
             </div>
@@ -425,7 +384,7 @@
 
   <!-- Toast Notice -->
   <div id="toast" class="toast-notice">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
     <span id="toast-message">Action executed</span>
   </div>
 

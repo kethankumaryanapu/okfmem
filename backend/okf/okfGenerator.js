@@ -23,11 +23,14 @@ function generateOKFConcept(memory) {
     category.toLowerCase()
   ].filter(Boolean);
 
+  const importance = memory.importance || "Medium";
+
   // Construct OKF v0.2 Markdown document with YAML frontmatter
   const content = `---
 type: ${conceptType}
 title: ${title}
 description: ${fact}
+importance: ${importance}
 tags:
 ${tags.map(t => `  - ${t}`).join('\n')}
 ---
