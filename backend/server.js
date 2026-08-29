@@ -205,6 +205,60 @@ function getFormattedDate() {
   return `${day} ${month} ${year}`;
 }
 
+function isFuzzyDuplicate(cand, existingMem) {
+  const normTitle = (cand.title || '').trim().toLowerCase();
+  const normFact = (cand.fact || '').trim().toLowerCase();
+  const mTitle = (existingMem.title || '').trim().toLowerCase();
+  const mFact = (existingMem.fact || '').trim().toLowerCase();
+
+  if (!normTitle && !normFact) return false;
+
+  // 1. Exact title or fact match
+  if ((normTitle && mTitle === normTitle) || (normFact && mFact === normFact)) {
+    return true;
+  }
+
+  // 2. Title substring containment match (for titles >= 3 chars)
+  if (normTitle && mTitle && normTitle.length >= 3 && mTitle.length >= 3) {
+    if (mTitle.includes(normTitle) || normTitle.includes(mTitle)) {
+      return true;
+    }
+  }
+
+  // 3. Fact key term overlap match
+  const stopwords = new Set([
+    'a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+    'in', 'on', 'at', 'to', 'for', 'from', 'with', 'by', 'about', 'user',
+    'and', 'or', 'my', 'i', 'am', 'working', 'learning', 'prefers', 'likes'
+  ]);
+
+  const getTokens = (text) => {
+    return new Set(
+      (text || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9_#+.\-<>]/g, ' ')
+        .split(/\s+/)
+        .filter(t => t.length > 2 && !stopwords.has(t))
+    );
+  };
+
+  const tokens1 = getTokens(normFact);
+  const tokens2 = getTokens(mFact);
+
+  if (tokens1.size > 0 && tokens2.size > 0) {
+    let matchCount = 0;
+    for (const t of tokens1) {
+      if (tokens2.has(t)) matchCount++;
+    }
+    const minSize = Math.min(tokens1.size, tokens2.size);
+    if (minSize > 0 && (matchCount / minSize) >= 0.7) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 function updateMemoryInteraction(mem) {
   mem.mention_count = (mem.mention_count || 1) + 1;
   mem.last_seen = getFormattedDate();
@@ -254,12 +308,8 @@ app.post('/api/chat', async (req, res) => {
 
         if (!normTitle && !normFact) continue;
 
-        // Check for duplicates in existing memories array
-        const existingMem = memories.find(m => {
-          const mTitle = (m.title || '').trim().toLowerCase();
-          const mFact = (m.fact || '').trim().toLowerCase();
-          return (normTitle && mTitle === normTitle) || (normFact && mFact === normFact);
-        });
+        // Check for duplicates in existing memories array (Task 13 Fuzzy Deduplication)
+        const existingMem = memories.find(m => isFuzzyDuplicate(cand, m));
 
         if (existingMem) {
           // Task 11: Increment mention_count, update last_seen, promote importance if threshold reached
@@ -341,6 +391,14 @@ app.post('/api/privacy/test', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`OKFMem backend running at http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`OKFMem backend running at http://localhost:${PORT}`);
+  });
+}
+
+module.exports = {
+  app,
+  isFuzzyDuplicate,
+  updateMemoryInteraction
+};

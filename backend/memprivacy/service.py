@@ -76,7 +76,9 @@ def extract_mem_privacy_taxonomy_items(text: str) -> list:
             name_val = match.group(1).strip()
             # Clean up trailing words like 'and', 'or'
             name_val = re.sub(r'\s+(?:and|or|my|is|email|phone|the)\b.*$', '', name_val, flags=re.IGNORECASE)
-            if name_val.lower() not in ["learning python", "working on"]:
+            first_word = name_val.split()[0].lower() if name_val else ""
+            ignored_verbs = {"learning", "working", "exploring", "studying", "building", "developing", "using", "trying", "getting", "currently", "recently"}
+            if first_word not in ignored_verbs and name_val.lower() not in ["learning python", "working on"]:
                 items.append({
                     "original_text": name_val,
                     "privacy_type": "Real Name",
@@ -386,23 +388,39 @@ def process_text(text: str) -> dict:
     finally:
         store.close()
 
+def clean_memory_title(title: str) -> str:
+    if not title:
+        return "Untitled Memory"
+    clean = title.strip()
+    # Strip leading verb/phrase prefixes if captured in title
+    clean = re.sub(r'^(?:currently\s+|recently\s+|i\s+am\s+|i\'m\s+)?(?:learning\s+to\s+use|learning|studying|mastering|exploring|working\s+on|building|developing|creating|using|preferring)\s+', '', clean, flags=re.IGNORECASE)
+    # Strip trailing phrase connectors
+    clean = re.sub(r'\s+(?:and|with|for)\s+(?:building|developing|working|learning|creating).*$', '', clean, flags=re.IGNORECASE)
+    clean = clean.strip()
+    if not clean:
+        clean = title.strip()
+
+    if clean.islower():
+        clean = clean.title()
+    return clean
+
 def extract_memories_from_text(masked_text: str, store: PrivacyStore, config: dict, has_cloud_llm: bool, cloud_config: dict) -> list:
     """
-    Task 9 Memory Extraction:
+    Task 9 & Task 13 Memory Extraction:
     Identifies useful long-term information (skills, preferences, projects, facts)
     from masked conversation text while maintaining the MemPrivacy boundary.
     Restores masked placeholders locally and sets privacy to 'Protected' if sensitive data was present.
     """
     candidates = []
 
-    # 1. Pattern & Heuristic Extraction (Local / Offline)
+    # 1. Expanded Pattern & Heuristic Extraction (Task 13)
     # Learning signals
-    learn_matches = re.finditer(r'\b(?:i am|i\'m|currently)\s+(?:learning|studying|learning to use)\s+([A-Za-z0-9_#+.\-<> ]+?)(?:\s+and\b|\s+with\b|\s+for\b|[.,;]|$)', masked_text, re.IGNORECASE)
+    learn_matches = re.finditer(r'\b(?:i am|i\'m|currently|recently)\s+(?:learning|studying|learning to use|getting started with|mastering|exploring)\s+([A-Za-z0-9_#+.\-<> ]+?)(?:\s+and\b|\s+with\b|\s+for\b|[.,;]|$)', masked_text, re.IGNORECASE)
     for m in learn_matches:
-        topic = m.group(1).strip()
+        topic = clean_memory_title(m.group(1))
         if topic and len(topic) > 1 and topic.lower() not in ["a lot", "more"]:
             candidates.append({
-                "title": topic.title(),
+                "title": topic,
                 "fact": f"User is learning {topic}.",
                 "category": "Skill",
                 "importance": "High",
@@ -410,12 +428,12 @@ def extract_memories_from_text(masked_text: str, store: PrivacyStore, config: di
             })
 
     # Preference signals
-    pref_matches = re.finditer(r'\b(?:i prefer|my preference is|i like|prefer working with)\s+(?:working with\s+)?([A-Za-z0-9_#+.\-<> ]+?)(?:\s+for\b|\s+and\b|\s+over\b|[.,;]|$)', masked_text, re.IGNORECASE)
+    pref_matches = re.finditer(r'\b(?:i prefer|my preference is|i like|prefer working with|prefer using|decided to use|fan of|enjoy using)\s+(?:working with\s+|using\s+)?([A-Za-z0-9_#+.\-<> ]+?)(?:\s+for\b|\s+and\b|\s+over\b|[.,;]|$)', masked_text, re.IGNORECASE)
     for m in pref_matches:
-        pref = m.group(1).strip()
+        pref = clean_memory_title(m.group(1))
         if pref and len(pref) > 1 and pref.lower() not in ["working", "that", "this"]:
             candidates.append({
-                "title": pref.title(),
+                "title": pref,
                 "fact": f"User prefers working with {pref}.",
                 "category": "Preference",
                 "importance": "High",
@@ -423,11 +441,11 @@ def extract_memories_from_text(masked_text: str, store: PrivacyStore, config: di
             })
 
     # Project signals
-    proj_matches = re.finditer(r'\b(?:i am|i\'m|working on|building|developing)\s+(?:an?\s+)?([A-Za-z0-9_#+.\-<> ]+?)\s+(?:project|app|application|system)\b', masked_text, re.IGNORECASE)
+    proj_matches = re.finditer(r'\b(?:i am|i\'m|working on|building|developing|creating|designing|architecting)\s+(?:an?\s+)?([A-Za-z0-9_#+.\-<> ]+?)\s+(?:project|app|application|system|service|platform)\b', masked_text, re.IGNORECASE)
     for m in proj_matches:
-        proj = m.group(1).strip()
+        proj = clean_memory_title(m.group(1))
         if proj and len(proj) > 1:
-            full_title = f"{proj.title()} Project" if "project" not in proj.lower() else proj.title()
+            full_title = f"{proj} Project" if "project" not in proj.lower() else proj
             candidates.append({
                 "title": full_title,
                 "fact": f"User is working on {proj} project.",
@@ -437,12 +455,12 @@ def extract_memories_from_text(masked_text: str, store: PrivacyStore, config: di
             })
 
     # Skill / Tool signals
-    skill_matches = re.finditer(r'\b(?:i use|i work with|i specialize in)\s+([A-Za-z0-9_#+.\-<> ]+?)(?:\s+for\b|\s+and\b|\s+in\b|[.,;]|$)', masked_text, re.IGNORECASE)
+    skill_matches = re.finditer(r'\b(?:i use|i work with|i specialize in|experienced with|skilled in|stack includes|stack features)\s+([A-Za-z0-9_#+.\-<> ]+?)(?:\s+for\b|\s+and\b|\s+in\b|[.,;]|$)', masked_text, re.IGNORECASE)
     for m in skill_matches:
-        sk = m.group(1).strip()
+        sk = clean_memory_title(m.group(1))
         if sk and len(sk) > 1 and sk.lower() not in ["a lot", "that", "it"]:
             candidates.append({
-                "title": sk.title(),
+                "title": sk,
                 "fact": f"User works with {sk}.",
                 "category": "Skill",
                 "importance": "Medium",
@@ -476,7 +494,7 @@ def extract_memories_from_text(masked_text: str, store: PrivacyStore, config: di
                 for pm in parsed_memories:
                     if isinstance(pm, dict) and pm.get("title") and pm.get("fact"):
                         candidates.append({
-                            "title": str(pm.get("title")).strip(),
+                            "title": clean_memory_title(str(pm.get("title"))),
                             "fact": str(pm.get("fact")).strip(),
                             "category": str(pm.get("category", "General")).strip(),
                             "importance": str(pm.get("importance", "Medium")).strip(),
@@ -496,6 +514,9 @@ def extract_memories_from_text(masked_text: str, store: PrivacyStore, config: di
         # Restore any masked privacy tokens in fact and title locally
         restored_title = unmask_dialogue(orig_title, store)
         restored_fact = unmask_dialogue(orig_fact, store)
+
+        # Clean restored title
+        restored_title = clean_memory_title(restored_title)
 
         # Determine privacy status
         is_protected = (restored_title != orig_title) or (restored_fact != orig_fact)

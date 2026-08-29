@@ -81,7 +81,13 @@ function updateOKFIndex(title, slug, fact) {
     indexContent = `---\nokf_version: "0.2"\n---\n\n# User Memory\n\n`;
   }
 
-  if (!indexContent.includes(`(${relPath})`)) {
+  const targetPattern = new RegExp(`^\\* \\[.*?\\]\\(${relPath.replace('.', '\\.')}\\).*$`, 'm');
+  if (targetPattern.test(indexContent)) {
+    const updatedContent = indexContent.replace(targetPattern, entryLine);
+    if (updatedContent !== indexContent) {
+      fs.writeFileSync(indexPath, updatedContent, 'utf8');
+    }
+  } else if (!indexContent.includes(`(${relPath})`)) {
     if (!indexContent.endsWith('\n')) {
       indexContent += '\n';
     }
