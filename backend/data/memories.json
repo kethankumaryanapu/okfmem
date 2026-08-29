@@ -22,17 +22,6 @@
     "created": "24 Aug 2026"
   },
   {
-    "id": "M003",
-    "title": "Async/Await",
-    "fact": "User prefers async/await structures.",
-    "category": "Preference",
-    "importance": "Medium",
-    "confidence": 92,
-    "privacy": "Safe",
-    "source": "Conversation",
-    "created": "23 Aug 2026"
-  },
-  {
     "id": "M004",
     "title": "Fastapi",
     "fact": "User prefers working with FastAPI.",
@@ -51,17 +40,6 @@
     "importance": "High",
     "confidence": 94,
     "privacy": "Protected",
-    "source": "Conversation",
-    "created": "27 Aug 2026"
-  },
-  {
-    "id": "M006",
-    "title": "Building Projects With Node",
-    "fact": "User prefers working with building projects with Node.",
-    "category": "Preference",
-    "importance": "High",
-    "confidence": 94,
-    "privacy": "Safe",
     "source": "Conversation",
     "created": "27 Aug 2026"
   }

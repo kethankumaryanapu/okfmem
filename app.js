@@ -225,7 +225,7 @@ function loadConversation(chatId) {
     if (msg.sender === 'user') {
       renderUserMessage(msg.text, msg.time);
     } else {
-      renderAssistantMessage(msg.text, msg.time, msg.memoryPill);
+      renderAssistantMessage(msg.text, msg.time, msg.meta || msg.memoryPill);
     }
   });
 
@@ -352,10 +352,23 @@ function closeMemoryModal(e) {
   if (modal) modal.classList.remove('open');
 }
 
-function deleteMemoryById(id) {
-  memories = memories.filter(m => m.id !== id);
-  renderMemoryList();
-  triggerToast('Memory deleted');
+async function deleteMemoryById(id) {
+  try {
+    const response = await fetch(`http://localhost:5000/api/memories/${id}`, {
+      method: 'DELETE'
+    });
+    const data = await response.json();
+    if (response.ok && data.success) {
+      memories = memories.filter(m => m.id !== id);
+      renderMemoryList();
+      triggerToast('Memory deleted');
+    } else {
+      triggerToast(data.error || 'Failed to delete memory');
+    }
+  } catch (err) {
+    console.error('Error deleting memory:', err);
+    triggerToast('Error connecting to server');
+  }
 }
 
 function deleteActiveMemory() {
@@ -584,6 +597,7 @@ async function generateAIResponse(userText, currentChatObj) {
 
   const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   let responseText = "";
+  let metaInfo = { provider: null, memories: [] };
 
   try {
     const res = await fetch('http://localhost:5000/api/chat', {
@@ -595,6 +609,37 @@ async function generateAIResponse(userText, currentChatObj) {
     const data = await res.json();
     if (res.ok && data.success && data.response) {
       responseText = data.response;
+      
+      if (data.provider) {
+        metaInfo.provider = data.provider;
+      }
+
+      const memoryTitles = new Set();
+
+      // 1. Memory titles from extracted_memories in response
+      if (Array.isArray(data.extracted_memories)) {
+        data.extracted_memories.forEach(m => {
+          if (m && m.title) memoryTitles.add(m.title);
+        });
+      }
+
+      // 2. Memory titles from saved memories matching response or recalled context
+      if (Array.isArray(memories)) {
+        memories.forEach(m => {
+          if (m && m.title) {
+            const titleLower = m.title.toLowerCase();
+            const factLower = (m.fact || '').toLowerCase();
+            const respLower = data.response.toLowerCase();
+            if ((titleLower.length > 2 && respLower.includes(titleLower)) || 
+                (factLower.length > 3 && respLower.includes(factLower))) {
+              memoryTitles.add(m.title);
+            }
+          }
+        });
+      }
+
+      metaInfo.memories = Array.from(memoryTitles);
+
       if (Array.isArray(data.extracted_memories) && data.extracted_memories.length > 0) {
         await fetchMemories();
         const titles = data.extracted_memories.map(m => m.title).join(', ');
@@ -615,29 +660,71 @@ async function generateAIResponse(userText, currentChatObj) {
     currentChatObj.messages.push({
       sender: 'assistant',
       text: responseText,
-      time: timeStr
+      time: timeStr,
+      meta: metaInfo
     });
   }
 
-  renderAssistantMessage(responseText, timeStr);
+  renderAssistantMessage(responseText, timeStr, metaInfo);
   scrollToBottom();
 }
 
-function renderAssistantMessage(responseText, timeStr, memoryPillText) {
+function renderAssistantMessage(responseText, timeStr, metaOrPill) {
   const container = document.getElementById('messages-container');
   if (!container) return;
 
   const msgDiv = document.createElement('div');
   msgDiv.className = 'chat-message-row msg-assistant';
   
-  let pillHtml = '';
-  if (memoryPillText) {
-    pillHtml = `
-      <div>
+  let providerPillHtml = '';
+  let memoryPillsHtml = '';
+
+  if (metaOrPill) {
+    if (typeof metaOrPill === 'string') {
+      memoryPillsHtml = `
         <span class="memory-pill-inline" onclick="toggleMemoryDrawer()">
           <span class="memory-pill-dot"></span>
-          <span>${memoryPillText}</span>
+          <span>${escapeHtml(metaOrPill)}</span>
         </span>
+      `;
+    } else if (typeof metaOrPill === 'object') {
+      if (metaOrPill.provider) {
+        const provRaw = String(metaOrPill.provider).toLowerCase();
+        let provLabel = provRaw;
+        if (provRaw === 'gemini') provLabel = 'Gemini';
+        else if (provRaw === 'offline') provLabel = 'Offline';
+        else if (provRaw === 'openai') provLabel = 'OpenAI';
+        else provLabel = provRaw.charAt(0).toUpperCase() + provRaw.slice(1);
+
+        providerPillHtml = `
+          <span class="memory-pill-inline" style="cursor: default;">
+            <span class="memory-pill-dot" style="background: var(--teal, #00b4d8); box-shadow: 0 0 6px var(--teal, #00b4d8);"></span>
+            <span>Provider: ${escapeHtml(provLabel)}</span>
+          </span>
+        `;
+      }
+
+      const mems = Array.isArray(metaOrPill.memories) ? metaOrPill.memories : (metaOrPill.memoryPill ? [metaOrPill.memoryPill] : []);
+      if (mems.length > 0) {
+        memoryPillsHtml = mems.map(title => {
+          const cleanTitle = title.startsWith('Memory: ') || title.startsWith('Applied Memory: ') ? title : `Memory: ${title}`;
+          return `
+            <span class="memory-pill-inline" onclick="toggleMemoryDrawer()">
+              <span class="memory-pill-dot"></span>
+              <span>${escapeHtml(cleanTitle)}</span>
+            </span>
+          `;
+        }).join('');
+      }
+    }
+  }
+
+  let pillsContainerHtml = '';
+  if (providerPillHtml || memoryPillsHtml) {
+    pillsContainerHtml = `
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;">
+        ${providerPillHtml}
+        ${memoryPillsHtml}
       </div>
     `;
   }
@@ -651,7 +738,7 @@ function renderAssistantMessage(responseText, timeStr, memoryPillText) {
     </div>
     <div class="msg-bubble">
       ${escapeHtml(responseText).replace(/\n/g, '<br>')}
-      ${pillHtml}
+      ${pillsContainerHtml}
     </div>
   `;
 

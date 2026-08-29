@@ -188,7 +188,7 @@
           <div class="nav-label">Overview</div>
           <ul class="nav-list">
             <li class="nav-item"><a href="okfmem-dashboard.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a></li>
-            <li class="nav-item"><a href="okfmem-ai-chat.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>AI Chat</a></li>
+            <li class="nav-item"><a href="index.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>AI Chat</a></li>
           </ul>
         </div>
 
@@ -242,11 +242,19 @@
           <span class="current">Memories Index</span>
         </div>
         <div class="topbar-actions">
-          <button class="btn btn-primary" onclick="openDetail('New Memory')"><svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New Record</button>
+          <a href="index.html" class="btn btn-primary" style="text-decoration: none;"><svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Open Live Memories App</a>
         </div>
       </header>
 
       <div class="content-container">
+        <!-- Prototype Preview Banner -->
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-medium); border-radius: var(--radius-md, 12px); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--text-muted); gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="background: var(--accent-bg); border: 1px solid var(--accent-border); color: var(--accent-2); padding: 2px 8px; border-radius: 6px; font-weight: 600; font-size: 11px;">Prototype Preview</span>
+            <span>Static index mockup view. Live memories, extraction, and persistent deletion run interactively in index.html.</span>
+          </div>
+          <a href="index.html" class="btn btn-primary" style="padding: 6px 14px; font-size: 12.5px; text-decoration: none; border-radius: 8px;">Open Live Memories ➔</a>
+        </div>
         <!-- Controls & Search -->
         <div class="controls-card">
           <div class="search-box">

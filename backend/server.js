@@ -95,6 +95,65 @@ app.get('/api/memories', (req, res) => {
   });
 });
 
+
+function deleteOKFConcept(memory) {
+  try {
+    if (!memory) return;
+    const title = memory.title || "Untitled Memory";
+    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'memory';
+    const relPath = `memories/${slug}.md`;
+    const memoriesDir = path.resolve(__dirname, 'okf', 'user-memory', 'memories');
+    const filePath = path.resolve(memoriesDir, `${slug}.md`);
+
+    if (filePath.startsWith(memoriesDir) && fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    const indexPath = path.resolve(__dirname, 'okf', 'user-memory', 'index.md');
+    if (fs.existsSync(indexPath)) {
+      const indexContent = fs.readFileSync(indexPath, 'utf8');
+      const targetPattern = new RegExp(`^\\* \\[.*?\\]\\(${relPath.replace('.', '\\.')}\\).*$\\n?`, 'm');
+      if (targetPattern.test(indexContent)) {
+        const updatedContent = indexContent.replace(targetPattern, '');
+        fs.writeFileSync(indexPath, updatedContent, 'utf8');
+      }
+    }
+  } catch (err) {
+    console.error(`Failed to delete OKF concept for memory ${memory.id}:`, err);
+  }
+}
+
+app.delete('/api/memories/:id', (req, res) => {
+  try {
+    const memoryId = req.params.id;
+    if (!memoryId) {
+      return res.status(400).json({ success: false, error: 'Memory ID is required' });
+    }
+
+    const index = memories.findIndex(m => m.id === memoryId);
+    if (index === -1) {
+      return res.status(404).json({ success: false, error: 'Memory not found' });
+    }
+
+    const [deletedMemory] = memories.splice(index, 1);
+    saveMemories(memories);
+
+    deleteOKFConcept(deletedMemory);
+
+    res.json({
+      success: true,
+      message: 'Memory deleted successfully',
+      id: memoryId
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+
 app.post('/api/okf/generate', (req, res) => {
   try {
     const memory = req.body;

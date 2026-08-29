@@ -302,7 +302,7 @@
           <div class="nav-label">Overview</div>
           <ul class="nav-list">
             <li class="nav-item active"><a href="okfmem-dashboard.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a></li>
-            <li class="nav-item"><a href="okfmem-ai-chat.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>AI Chat</a></li>
+            <li class="nav-item"><a href="index.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>AI Chat</a></li>
           </ul>
         </div>
 
@@ -357,15 +357,24 @@
         </div>
         <div class="topbar-actions">
           <div class="pill-badge"><svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>MemPrivacy Active</div>
-          <a href="okfmem-ai-chat.html" class="btn btn-primary"><svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Start New Chat</a>
+          <a href="index.html" class="btn btn-primary"><svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Start New Chat</a>
         </div>
       </header>
 
       <div class="content-container">
+        <!-- Prototype Preview Banner -->
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-medium); border-radius: var(--radius-md, 12px); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--text-muted); gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="background: var(--accent-bg); border: 1px solid var(--accent-border); color: var(--accent); padding: 2px 8px; border-radius: 6px; font-weight: 600; font-size: 11px;">Prototype Preview</span>
+            <span>Dashboard showing sample metrics & design layout. The live interactive AI Chatbot application is running in index.html.</span>
+          </div>
+          <a href="index.html" class="btn btn-primary" style="padding: 6px 14px; font-size: 12.5px; text-decoration: none; border-radius: 8px;">Launch Live App ➔</a>
+        </div>
+
         <!-- KPI Grid -->
         <div class="grid-4">
           <div class="card">
-            <div class="kpi-title">Total Memory Records</div>
+            <div class="kpi-title">Total Memory Records (Sample Data)</div>
             <div class="kpi-value">1,482</div>
             <div class="kpi-trend trend-up"><svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>+12% this month</div>
           </div>
