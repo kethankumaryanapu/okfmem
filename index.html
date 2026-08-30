@@ -44,6 +44,10 @@
           <span class="memory-badge-counter" id="memory-badge-count">3</span>
         </button>
 
+        <button class="btn btn-ghost btn-icon" id="btn-theme-toggle" onclick="toggleTheme()" title="Toggle White/Dark Theme">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+        </button>
+
         <button class="btn btn-ghost btn-icon" id="btn-settings-modal" onclick="openSettingsModal()" title="Settings">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
         </button>
@@ -325,10 +329,23 @@
             <h3 class="panel-title">Appearance & Color Theme</h3>
             <div class="setting-row">
               <div>
-                <strong class="setting-name">Color Mode</strong>
-                <span class="setting-desc">Obsidian Charcoal Glassmorphism Theme (#080B10)</span>
+                <strong class="setting-name">Select Color Mode</strong>
+                <span class="setting-desc">Switch between Obsidian Charcoal Dark and Clean White Light Theme</span>
               </div>
-              <span class="privacy-badge state-safe">Active</span>
+              <select class="form-select" id="theme-selector" onchange="setTheme(this.value)" style="min-width: 170px;">
+                <option value="dark">Obsidian Dark</option>
+                <option value="light">White Theme</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <div>
+                <strong class="setting-name">Quick Theme Selection</strong>
+                <span class="setting-desc">Click to apply white theme or dark theme immediately</span>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-secondary" onclick="setTheme('dark')" style="font-size: 12px; padding: 6px 14px;">Dark Theme</button>
+                <button class="btn btn-primary" onclick="setTheme('light')" style="font-size: 12px; padding: 6px 14px;">White Theme</button>
+              </div>
             </div>
           </div>
 
@@ -346,18 +363,45 @@
 
           <!-- Memory Settings Tab -->
           <div class="settings-panel" id="tab-memory">
-            <h3 class="panel-title">Memory Management</h3>
+            <h3 class="panel-title">Memory Control & Behavior</h3>
+            
             <div class="setting-row">
               <div>
-                <strong class="setting-name">Automatic Fact Scanning</strong>
-                <span class="setting-desc">Extract contextual facts during conversation</span>
+                <strong class="setting-name">Memory Enabled</strong>
+                <span class="setting-desc">Retrieve existing memories for AI context and process conversation memory</span>
               </div>
-              <input type="checkbox" checked class="toggle-checkbox" onchange="triggerToast('Fact scanning setting updated')">
+              <input type="checkbox" id="setting-memory-enabled" checked class="toggle-checkbox" onchange="updateUserSettingsFromUI()">
             </div>
+
             <div class="setting-row">
               <div>
-                <strong class="setting-name">Max Memory Capacity</strong>
-                <span class="setting-desc">100 active memory records</span>
+                <strong class="setting-name">Auto-Save New Memories</strong>
+                <span class="setting-desc">Persist newly extracted memories to local memory storage automatically</span>
+              </div>
+              <input type="checkbox" id="setting-autosave-memories" checked class="toggle-checkbox" onchange="updateUserSettingsFromUI()">
+            </div>
+
+            <div class="setting-row" style="flex-direction: column; align-items: flex-start; gap: 10px;">
+              <div>
+                <strong class="setting-name">Allowed Memory Categories</strong>
+                <span class="setting-desc">Only extracted memories belonging to checked categories will be saved</span>
+              </div>
+              <div style="display: flex; flex-wrap: wrap; gap: 14px; margin-top: 4px;">
+                <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: var(--text-primary);">
+                  <input type="checkbox" id="cat-skill" checked onchange="updateUserSettingsFromUI()" style="accent-color: var(--red-primary);"> Skill
+                </label>
+                <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: var(--text-primary);">
+                  <input type="checkbox" id="cat-preference" checked onchange="updateUserSettingsFromUI()" style="accent-color: var(--red-primary);"> Preference
+                </label>
+                <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: var(--text-primary);">
+                  <input type="checkbox" id="cat-project" checked onchange="updateUserSettingsFromUI()" style="accent-color: var(--red-primary);"> Project
+                </label>
+                <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: var(--text-primary);">
+                  <input type="checkbox" id="cat-fact" checked onchange="updateUserSettingsFromUI()" style="accent-color: var(--red-primary);"> Fact
+                </label>
+                <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: var(--text-primary);">
+                  <input type="checkbox" id="cat-general" checked onchange="updateUserSettingsFromUI()" style="accent-color: var(--red-primary);"> General
+                </label>
               </div>
             </div>
           </div>
@@ -367,10 +411,20 @@
             <h3 class="panel-title">MemPrivacy & Security Boundary</h3>
             <div class="setting-row">
               <div>
-                <strong class="setting-name">MemPrivacy Protection</strong>
-                <span class="setting-desc">Require authorization & local masking for sensitive data</span>
+                <strong class="setting-name">Privacy Processing Mode</strong>
+                <span class="setting-desc">Local masking mode for sensitive data (PII & sensitive memory protection)</span>
               </div>
-              <input type="checkbox" checked class="toggle-checkbox" onchange="triggerToast('MemPrivacy policy updated')">
+              <select class="form-select" id="setting-privacy-mode" onchange="updateUserSettingsFromUI()" style="min-width: 170px;">
+                <option value="Protected">Protected</option>
+                <option value="Standard">Standard</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <div>
+                <strong class="setting-name">MemPrivacy Local Masking</strong>
+                <span class="setting-desc">Require local masking for sensitive details before sending to AI providers</span>
+              </div>
+              <span class="privacy-badge state-safe">Active</span>
             </div>
           </div>
         </div>

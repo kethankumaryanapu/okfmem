@@ -219,24 +219,26 @@ def retrieve_relevant_memories(user_text: str, memories_list: list, top_k: int =
     scored_memories.sort(key=lambda x: x[0], reverse=True)
 
     # Filter positive keyword matches first if query terms exist
-    positive_matches = [mem for score, mem in scored_memories if score >= 1.0]
-    if positive_matches:
+    if query_terms:
+        positive_matches = [mem for score, mem in scored_memories if score >= 1.0]
         return positive_matches[:top_k]
+    else:
+        return memories_list[:top_k]
 
-    return [mem for score, mem in scored_memories[:top_k]]
-
-def format_memories_for_context(memories_list: list, store: PrivacyStore, mask_levels: list, user_text: str = "") -> str:
+def format_memories_for_context(memories_list: list, store: PrivacyStore, mask_levels: list, user_text: str = "") -> tuple:
     """
-    Task 10: Formats relevant memories into a privacy-masked context block for AI chat.
+    Task 10 & 15: Formats relevant memories into a privacy-masked context block for AI chat.
     Retrieves relevant memories matching user_text and passes memory facts through
     mask_dialogue to ensure sensitive details remain protected.
+    Returns tuple: (context_string, used_memories_list)
     """
     if not memories_list or not isinstance(memories_list, list):
-        return ""
+        return "", []
 
     relevant_memories = retrieve_relevant_memories(user_text, memories_list, top_k=5) if user_text else memories_list
 
     context_lines = []
+    used_memories = []
     for mem in relevant_memories:
         if not isinstance(mem, dict):
             continue
@@ -246,6 +248,7 @@ def format_memories_for_context(memories_list: list, store: PrivacyStore, mask_l
         if not fact:
             continue
 
+        used_memories.append(mem)
         # Mask any sensitive text in the memory fact before giving to AI
         all_stored_items = store.get_all()
         matching_items = [item for item in all_stored_items if item["original_text"] in fact]
@@ -254,9 +257,9 @@ def format_memories_for_context(memories_list: list, store: PrivacyStore, mask_l
         context_lines.append(f"- [{category}] {masked_fact}")
 
     if not context_lines:
-        return ""
+        return "", []
 
-    return "Known User Memories (Use these facts to answer questions when relevant):\n" + "\n".join(context_lines)
+    return "Known User Memories (Use these facts to answer questions when relevant):\n" + "\n".join(context_lines), used_memories
 
 def generate_ai_chat_response(masked_text: str, config: dict, has_llm_config: bool, memory_context: str = "") -> tuple:
     """
@@ -536,16 +539,24 @@ def extract_memories_from_text(masked_text: str, store: PrivacyStore, config: di
 
     return final_memories
 
-def process_chat(text: str, memories_list: list = None) -> dict:
+def process_chat(text: str, memories_list: list = None, settings: dict = None) -> dict:
     """
-    Chat Pipeline for Task 8, Task 9 & Task 10:
+    Chat Pipeline for Task 8, Task 9, Task 10 & Task 15:
     1. USER MESSAGE -> Local MemPrivacy Privacy Detection & Masking (local LLM or local PrivacyStore)
-    2. MEMORIES -> Formatted & Privacy-masked into Context String
-    3. MASKED MESSAGE + MEMORY CONTEXT -> External/Cloud AI Processing
+    2. MEMORIES -> Formatted & Privacy-masked into Context String if memory_enabled is True
+    3. MASKED MESSAGE + MEMORY CONTEXT -> External/Cloud AI Processing (Gemini or Fallback)
     4. AI RESPONSE -> Local MemPrivacy Restoration (unmask_dialogue)
-    5. MASKED MESSAGE -> Memory Extraction -> Local Restoration
-    6. RESTORED RESPONSE & EXTRACTED MEMORIES -> Returned to caller
+    5. MASKED MESSAGE -> Memory Extraction -> Local Restoration if memory_enabled is True
+    6. RESTORED RESPONSE, USED MEMORIES & EXTRACTED MEMORIES -> Returned to caller
     """
+    if settings is None:
+        settings = {}
+
+    memory_enabled = settings.get("memoryEnabled", settings.get("memory_enabled", True))
+    auto_save = settings.get("autoSaveMemories", settings.get("auto_save", True))
+    privacy_mode = settings.get("privacyMode", settings.get("privacy_mode", "Protected"))
+    allowed_categories = settings.get("allowedCategories", settings.get("allowed_categories", ["Skill", "Preference", "Project", "Fact", "General"]))
+
     config_path = os.path.join(src_dir, "privacy_config.yaml")
     config = load_yaml_config(config_path)
 
@@ -581,8 +592,12 @@ def process_chat(text: str, memories_list: list = None) -> dict:
             mask_levels=mask_levels
         )
 
-        # Step 2: Format Relevant Memory Context (Task 10)
-        memory_context = format_memories_for_context(memories_list, store, mask_levels, user_text=masked_text)
+        # Step 2: Format Relevant Memory Context if memory_enabled is True (Task 10 & 15)
+        used_memories = []
+        if memory_enabled:
+            memory_context, used_memories = format_memories_for_context(memories_list, store, mask_levels, user_text=masked_text)
+        else:
+            memory_context = ""
 
         # Step 3: AI Processing (Receives ONLY masked_text and privacy-masked memory context)
         ai_masked_response, provider = generate_ai_chat_response(masked_text, cloud_config, has_cloud_llm, memory_context)
@@ -590,19 +605,31 @@ def process_chat(text: str, memories_list: list = None) -> dict:
         # Step 4: MemPrivacy Restoration for Chat Response
         restored_response = unmask_dialogue(ai_masked_response, store)
 
-        # Step 5: Memory Extraction on masked_text (Task 9)
-        extracted_memories = extract_memories_from_text(
-            masked_text=masked_text,
-            store=store,
-            config=config,
-            has_cloud_llm=has_cloud_llm,
-            cloud_config=cloud_config
-        )
+        # Step 5: Memory Extraction on masked_text if memory_enabled is True (Task 9 & 15)
+        extracted_memories = []
+        if memory_enabled:
+            raw_extracted = extract_memories_from_text(
+                masked_text=masked_text,
+                store=store,
+                config=config,
+                has_cloud_llm=has_cloud_llm,
+                cloud_config=cloud_config
+            )
 
-        # Return clean response, extracted memories, and provider status
+            # Filter extracted memories by allowed_categories
+            allowed_cats_lower = [str(c).strip().lower() for c in allowed_categories]
+            for cand in raw_extracted:
+                cand_cat = str(cand.get("category", "General")).strip().lower()
+                if not allowed_cats_lower or cand_cat in allowed_cats_lower:
+                    if privacy_mode == "Protected":
+                        cand["privacy"] = "Protected"
+                    extracted_memories.append(cand)
+
+        # Return clean response, used memories, extracted memories, and provider status
         return {
             "success": True,
             "response": restored_response,
+            "used_memories": used_memories,
             "extracted_memories": extracted_memories,
             "provider": provider
         }
@@ -620,6 +647,7 @@ if __name__ == "__main__":
     mode = "test"
     input_text = ""
     memories_input = None
+    settings_input = None
 
     if len(sys.argv) > 2 and sys.argv[1] in ["chat", "test"]:
         mode = sys.argv[1]
@@ -627,6 +655,11 @@ if __name__ == "__main__":
         if len(sys.argv) > 3:
             try:
                 memories_input = json.loads(sys.argv[3])
+            except Exception:
+                pass
+        if len(sys.argv) > 4:
+            try:
+                settings_input = json.loads(sys.argv[4])
             except Exception:
                 pass
     elif len(sys.argv) > 1:
@@ -638,11 +671,12 @@ if __name__ == "__main__":
             mode = parsed.get("mode", "test")
             input_text = parsed.get("text", "")
             memories_input = parsed.get("memories", None)
+            settings_input = parsed.get("settings", None)
         except Exception:
             input_text = raw_input.strip()
 
     if mode == "chat":
-        result = process_chat(input_text, memories_input)
+        result = process_chat(input_text, memories_input, settings_input)
     else:
         result = process_text(input_text)
 

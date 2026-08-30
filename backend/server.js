@@ -14,6 +14,44 @@ const { generateOKFConcept } = require('./okf/okfGenerator');
 
 const DATA_DIR = path.resolve(__dirname, 'data');
 const MEMORIES_FILE = path.resolve(DATA_DIR, 'memories.json');
+const SETTINGS_FILE = path.resolve(DATA_DIR, 'settings.json');
+
+const defaultSettings = {
+  memoryEnabled: true,
+  autoSaveMemories: true,
+  allowedCategories: ["Skill", "Preference", "Project", "Fact", "General"],
+  privacyMode: "Protected"
+};
+
+function loadSettings() {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    if (!fs.existsSync(SETTINGS_FILE)) {
+      fs.writeFileSync(SETTINGS_FILE, JSON.stringify(defaultSettings, null, 2), 'utf8');
+      return { ...defaultSettings };
+    }
+    const data = fs.readFileSync(SETTINGS_FILE, 'utf8');
+    return { ...defaultSettings, ...JSON.parse(data) };
+  } catch (err) {
+    console.error('Error reading settings.json:', err);
+    return { ...defaultSettings };
+  }
+}
+
+function saveSettings(settingsObj) {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settingsObj, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Error writing settings.json:', err);
+  }
+}
+
+let userSettings = loadSettings();
 
 const defaultMemories = [
   {
@@ -86,6 +124,30 @@ app.get('/api/health', (req, res) => {
     status: 'OK',
     message: 'OKFMem backend is running'
   });
+});
+
+app.get('/api/settings', (req, res) => {
+  res.json({
+    success: true,
+    settings: userSettings
+  });
+});
+
+app.post('/api/settings', (req, res) => {
+  try {
+    const newSettings = req.body || {};
+    userSettings = {
+      ...userSettings,
+      ...newSettings
+    };
+    saveSettings(userSettings);
+    res.json({
+      success: true,
+      settings: userSettings
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 app.get('/api/memories', (req, res) => {
@@ -235,13 +297,14 @@ function runMemPrivacyService(text) {
   });
 }
 
-function runMemPrivacyChat(text, memoriesList = []) {
+function runMemPrivacyChat(text, memoriesList = [], settingsObj = null) {
   return new Promise((resolve, reject) => {
     const pythonPath = 'python';
     const scriptPath = path.resolve(__dirname, 'memprivacy', 'service.py');
     const jsonMemories = JSON.stringify(memoriesList || []);
+    const jsonSettings = JSON.stringify(settingsObj || userSettings || {});
 
-    execFile(pythonPath, [scriptPath, 'chat', text, jsonMemories], { cwd: __dirname }, (error, stdout, stderr) => {
+    execFile(pythonPath, [scriptPath, 'chat', text, jsonMemories, jsonSettings], { cwd: __dirname }, (error, stdout, stderr) => {
       if (error) {
         return reject(new Error(`MemPrivacy execution error: ${stderr || error.message}`));
       }
@@ -350,7 +413,7 @@ app.post('/api/chat', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Message input text is required' });
     }
 
-    const result = await runMemPrivacyChat(inputMessage, memories);
+    const result = await runMemPrivacyChat(inputMessage, memories, userSettings);
     if (!result.success) {
       return res.status(500).json({
         success: false,
@@ -360,12 +423,24 @@ app.post('/api/chat', async (req, res) => {
 
     const createdMemories = [];
 
-    if (Array.isArray(result.extracted_memories) && result.extracted_memories.length > 0) {
+    // Task 15 Memory Control & Rules
+    // 15.1: If memoryEnabled is OFF, do not extract or persist new memories
+    // 15.2: Filter by allowedCategories before persisting
+    // 15.1: If autoSaveMemories is OFF, do not persist newly extracted memories
+    if (userSettings.memoryEnabled && Array.isArray(result.extracted_memories) && result.extracted_memories.length > 0) {
+      const allowedCats = (userSettings.allowedCategories || []).map(c => String(c).trim().toLowerCase());
+
       for (const cand of result.extracted_memories) {
         const normTitle = (cand.title || '').trim().toLowerCase();
         const normFact = (cand.fact || '').trim().toLowerCase();
+        const candCat = (cand.category || 'Skill').trim().toLowerCase();
 
         if (!normTitle && !normFact) continue;
+
+        // Check if candidate category is allowed (15.2)
+        if (allowedCats.length > 0 && !allowedCats.includes(candCat)) {
+          continue;
+        }
 
         // Check for duplicates in existing memories array (Task 13 Fuzzy Deduplication)
         const existingMem = memories.find(m => isFuzzyDuplicate(cand, m));
@@ -373,7 +448,8 @@ app.post('/api/chat', async (req, res) => {
         if (existingMem) {
           // Task 11: Increment mention_count, update last_seen, promote importance if threshold reached
           updateMemoryInteraction(existingMem);
-        } else {
+        } else if (userSettings.autoSaveMemories) {
+          // Auto-Save ON (15.1): Persist newly extracted memory
           const maxNum = memories.reduce((max, item) => {
             const num = parseInt((item.id || '').replace(/^M0*/, ''), 10);
             return !isNaN(num) && num > max ? num : max;
@@ -407,12 +483,15 @@ app.post('/api/chat', async (req, res) => {
         }
       }
 
-      saveMemories(memories);
+      if (createdMemories.length > 0) {
+        saveMemories(memories);
+      }
     }
 
     res.json({
       success: true,
       response: result.response,
+      used_memories: result.used_memories || [],
       extracted_memories: createdMemories,
       provider: result.provider || 'offline'
     });

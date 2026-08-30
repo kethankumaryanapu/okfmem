@@ -210,9 +210,12 @@
           <div class="setting-row">
             <div>
               <div class="setting-label">Theme Mode</div>
-              <div class="setting-desc">Switch between Deep Obsidian Dark Mode and Light Mode</div>
+              <div class="setting-desc">Switch between Obsidian Dark Mode and White Light Theme</div>
             </div>
-            <input type="checkbox" checked class="toggle-switch" onchange="toggleTheme()">
+            <select class="select-input" id="theme-selector-page" onchange="setThemeMode(this.value)">
+              <option value="dark">Dark Theme (Obsidian)</option>
+              <option value="light">White Theme (Clean Light)</option>
+            </select>
           </div>
           <div class="setting-row">
             <div>
@@ -226,48 +229,55 @@
           </div>
         </div>
 
-        <!-- 2. Memory Behavior Card -->
+        <!-- 2. Memory Behavior & Privacy Card -->
         <div class="card">
-          <div class="card-title">Memory Behavior</div>
+          <div class="card-title">Memory Behavior & Privacy</div>
           <div class="setting-row">
             <div>
-              <div class="setting-label">Auto-Capture Memory Traces</div>
-              <div class="setting-desc">Automatically scan AI conversation threads for personal preferences and facts</div>
+              <div class="setting-label">Memory Enabled</div>
+              <div class="setting-desc">Retrieve existing memories for AI context and process conversation memory</div>
             </div>
-            <input type="checkbox" checked class="toggle-switch">
+            <input type="checkbox" id="setting-page-memory-enabled" checked class="toggle-switch" onchange="savePageSettings()">
           </div>
           <div class="setting-row">
             <div>
-              <div class="setting-label">Minimum Confidence Threshold</div>
-              <div class="setting-desc">Only persist memories extracted with confidence above this percentage</div>
+              <div class="setting-label">Auto-Save New Memories</div>
+              <div class="setting-desc">Automatically persist newly extracted memory facts to storage</div>
             </div>
-            <select class="select-input">
-              <option>80% Confidence</option>
-              <option selected>85% Confidence (Recommended)</option>
-              <option>90% Strict Confidence</option>
-            </select>
+            <input type="checkbox" id="setting-page-autosave-memories" checked class="toggle-switch" onchange="savePageSettings()">
           </div>
           <div class="setting-row">
             <div>
-              <div class="setting-label">Default Privacy Tier for New Memories</div>
-              <div class="setting-desc">Initial privacy classification applied to newly extracted facts</div>
+              <div class="setting-label">Privacy Mode</div>
+              <div class="setting-desc">MemPrivacy masking & classification policy for memory pipeline</div>
             </div>
-            <select class="select-input">
-              <option>PL1 — Public / Preference</option>
-              <option selected>PL2 — Protected PII</option>
+            <select class="select-input" id="setting-page-privacy-mode" onchange="savePageSettings()">
+              <option value="Protected">Protected</option>
+              <option value="Standard">Standard</option>
             </select>
           </div>
-          <div class="setting-row">
+          <div class="setting-row" style="flex-direction: column; align-items: flex-start; gap: 10px;">
             <div>
-              <div class="setting-label">Auto-Archive Inactive Memories</div>
-              <div class="setting-desc">Archive records after N days without reference</div>
+              <div class="setting-label">Allowed Memory Categories</div>
+              <div class="setting-desc">Only extracted facts belonging to allowed categories will be saved</div>
             </div>
-            <select class="select-input">
-              <option>30 Days</option>
-              <option selected>60 Days</option>
-              <option>90 Days</option>
-              <option>Never Auto-Archive</option>
-            </select>
+            <div style="display: flex; flex-wrap: wrap; gap: 14px; margin-top: 4px;">
+              <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: var(--text-main);">
+                <input type="checkbox" id="page-cat-skill" checked onchange="savePageSettings()"> Skill
+              </label>
+              <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: var(--text-main);">
+                <input type="checkbox" id="page-cat-preference" checked onchange="savePageSettings()"> Preference
+              </label>
+              <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: var(--text-main);">
+                <input type="checkbox" id="page-cat-project" checked onchange="savePageSettings()"> Project
+              </label>
+              <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: var(--text-main);">
+                <input type="checkbox" id="page-cat-fact" checked onchange="savePageSettings()"> Fact
+              </label>
+              <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: var(--text-main);">
+                <input type="checkbox" id="page-cat-general" checked onchange="savePageSettings()"> General
+              </label>
+            </div>
           </div>
         </div>
 
@@ -315,7 +325,7 @@
           <div class="setting-row">
             <div>
               <div class="setting-label">Purge All Memory Records</div>
-              <div class="setting-desc">Permanently delete all 1,482 stored memories from local SQLite store</div>
+              <div class="setting-desc">Permanently delete all stored memories from local store</div>
             </div>
             <button class="btn btn-danger">Purge Vault Data</button>
           </div>
@@ -325,11 +335,75 @@
   </div>
 
   <script>
-    function toggleTheme() {
+    function setThemeMode(themeName) {
       const html = document.documentElement;
-      const current = html.getAttribute('data-theme');
-      html.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
+      html.setAttribute('data-theme', themeName);
+      localStorage.setItem('okfmem_theme', themeName);
+      const sel = document.getElementById('theme-selector-page');
+      if (sel) sel.value = themeName;
     }
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      setThemeMode(current === 'light' ? 'dark' : 'light');
+    }
+
+    async function loadPageSettings() {
+      try {
+        const res = await fetch('http://localhost:5000/api/settings');
+        const data = await res.json();
+        if (data && data.success && data.settings) {
+          const s = data.settings;
+          const memEn = document.getElementById('setting-page-memory-enabled');
+          const autoSave = document.getElementById('setting-page-autosave-memories');
+          const privMode = document.getElementById('setting-page-privacy-mode');
+
+          if (memEn) memEn.checked = s.memoryEnabled !== false;
+          if (autoSave) autoSave.checked = s.autoSaveMemories !== false;
+          if (privMode) privMode.value = s.privacyMode || 'Protected';
+
+          const cats = (s.allowedCategories || []).map(c => String(c).toLowerCase());
+          ['skill', 'preference', 'project', 'fact', 'general'].forEach(cat => {
+            const el = document.getElementById(`page-cat-${cat}`);
+            if (el) el.checked = cats.includes(cat);
+          });
+        }
+      } catch (err) {
+        console.warn('Failed to load backend settings:', err);
+      }
+    }
+
+    async function savePageSettings() {
+      const allowedCategories = [];
+      ['skill', 'preference', 'project', 'fact', 'general'].forEach(cat => {
+        const el = document.getElementById(`page-cat-${cat}`);
+        if (el && el.checked) {
+          allowedCategories.push(cat.charAt(0).toUpperCase() + cat.slice(1));
+        }
+      });
+
+      const payload = {
+        memoryEnabled: document.getElementById('setting-page-memory-enabled')?.checked ?? true,
+        autoSaveMemories: document.getElementById('setting-page-autosave-memories')?.checked ?? true,
+        privacyMode: document.getElementById('setting-page-privacy-mode')?.value ?? 'Protected',
+        allowedCategories: allowedCategories
+      };
+
+      try {
+        await fetch('http://localhost:5000/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } catch (err) {
+        console.error('Failed to save settings:', err);
+      }
+    }
+
+    (function() {
+      const saved = localStorage.getItem('okfmem_theme') || 'dark';
+      setThemeMode(saved);
+      loadPageSettings();
+    })();
   </script>
 </body>
 </html>

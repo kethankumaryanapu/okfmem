@@ -465,8 +465,78 @@ async function exportOKFBundle() {
   }
 }
 
+/* Settings State & Management */
+let userSettings = {
+  memoryEnabled: true,
+  autoSaveMemories: true,
+  allowedCategories: ["Skill", "Preference", "Project", "Fact", "General"],
+  privacyMode: "Protected"
+};
+
+async function fetchSettings() {
+  try {
+    const res = await fetch('http://localhost:5000/api/settings');
+    const data = await res.json();
+    if (data && data.success && data.settings) {
+      userSettings = data.settings;
+      syncSettingsUI();
+    }
+  } catch (err) {
+    console.error('Failed to fetch settings from backend:', err);
+  }
+}
+
+function syncSettingsUI() {
+  const memEn = document.getElementById('setting-memory-enabled');
+  const autoSave = document.getElementById('setting-autosave-memories');
+  const privMode = document.getElementById('setting-privacy-mode');
+
+  if (memEn) memEn.checked = userSettings.memoryEnabled !== false;
+  if (autoSave) autoSave.checked = userSettings.autoSaveMemories !== false;
+  if (privMode) privMode.value = userSettings.privacyMode || 'Protected';
+
+  const cats = (userSettings.allowedCategories || []).map(c => String(c).toLowerCase());
+  ['skill', 'preference', 'project', 'fact', 'general'].forEach(cat => {
+    const el = document.getElementById(`cat-${cat}`);
+    if (el) el.checked = cats.includes(cat);
+  });
+}
+
+async function updateUserSettingsFromUI() {
+  const allowedCategories = [];
+  ['skill', 'preference', 'project', 'fact', 'general'].forEach(cat => {
+    const el = document.getElementById(`cat-${cat}`);
+    if (el && el.checked) {
+      allowedCategories.push(cat.charAt(0).toUpperCase() + cat.slice(1));
+    }
+  });
+
+  userSettings = {
+    memoryEnabled: document.getElementById('setting-memory-enabled')?.checked ?? true,
+    autoSaveMemories: document.getElementById('setting-autosave-memories')?.checked ?? true,
+    privacyMode: document.getElementById('setting-privacy-mode')?.value ?? 'Protected',
+    allowedCategories: allowedCategories
+  };
+
+  try {
+    const res = await fetch('http://localhost:5000/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userSettings)
+    });
+    const data = await res.json();
+    if (data && data.success) {
+      triggerToast('Settings updated');
+    }
+  } catch (err) {
+    console.error('Failed to save settings to backend:', err);
+    triggerToast('Failed to save settings');
+  }
+}
+
 /* Settings Modal */
 function openSettingsModal() {
+  syncSettingsUI();
   const modal = document.getElementById('settings-modal');
   if (modal) modal.classList.add('open');
 }
@@ -488,6 +558,48 @@ function switchSettingsTab(tabId, navBtn) {
   const targetPanel = document.getElementById('tab-' + tabId);
   if (targetPanel) targetPanel.classList.add('active');
 }
+
+/* ==========================================================================
+   Theme Management (Light / White Theme vs Dark Theme)
+   ========================================================================== */
+function setTheme(themeName) {
+  const html = document.documentElement;
+  const isLight = themeName === 'light';
+  html.setAttribute('data-theme', isLight ? 'light' : 'dark');
+  localStorage.setItem('okfmem_theme', isLight ? 'light' : 'dark');
+  
+  const selector = document.getElementById('theme-selector');
+  if (selector) selector.value = isLight ? 'light' : 'dark';
+  
+  const badge = document.getElementById('theme-active-badge');
+  if (badge) {
+    badge.textContent = isLight ? 'White Theme Active' : 'Dark Theme Active';
+  }
+
+  triggerToast(isLight ? 'Switched to White Theme' : 'Switched to Dark Theme');
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  setTheme(current === 'light' ? 'dark' : 'light');
+}
+
+function initTheme() {
+  const savedTheme = localStorage.getItem('okfmem_theme') || 'dark';
+  const html = document.documentElement;
+  html.setAttribute('data-theme', savedTheme);
+  const selector = document.getElementById('theme-selector');
+  if (selector) selector.value = savedTheme;
+}
+
+// Run initTheme on load
+initTheme();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initTheme);
+} else {
+  initTheme();
+}
+
 
 /* ==========================================================================
    Chat Interactions (Teach New Fact & Recall Profile)
@@ -616,25 +728,10 @@ async function generateAIResponse(userText, currentChatObj) {
 
       const memoryTitles = new Set();
 
-      // 1. Memory titles from extracted_memories in response
-      if (Array.isArray(data.extracted_memories)) {
-        data.extracted_memories.forEach(m => {
+      // Task 15.4 Explainable Memory Retrieval: Use actual used_memories returned by backend
+      if (Array.isArray(data.used_memories) && data.used_memories.length > 0) {
+        data.used_memories.forEach(m => {
           if (m && m.title) memoryTitles.add(m.title);
-        });
-      }
-
-      // 2. Memory titles from saved memories matching response or recalled context
-      if (Array.isArray(memories)) {
-        memories.forEach(m => {
-          if (m && m.title) {
-            const titleLower = m.title.toLowerCase();
-            const factLower = (m.fact || '').toLowerCase();
-            const respLower = data.response.toLowerCase();
-            if ((titleLower.length > 2 && respLower.includes(titleLower)) || 
-                (factLower.length > 3 && respLower.includes(factLower))) {
-              memoryTitles.add(m.title);
-            }
-          }
         });
       }
 
@@ -681,10 +778,11 @@ function renderAssistantMessage(responseText, timeStr, metaOrPill) {
 
   if (metaOrPill) {
     if (typeof metaOrPill === 'string') {
+      const cleanLabel = metaOrPill.startsWith('Memory used: ') ? metaOrPill : `Memory used: ${metaOrPill}`;
       memoryPillsHtml = `
         <span class="memory-pill-inline" onclick="toggleMemoryDrawer()">
           <span class="memory-pill-dot"></span>
-          <span>${escapeHtml(metaOrPill)}</span>
+          <span>${escapeHtml(cleanLabel)}</span>
         </span>
       `;
     } else if (typeof metaOrPill === 'object') {
@@ -707,9 +805,9 @@ function renderAssistantMessage(responseText, timeStr, metaOrPill) {
       const mems = Array.isArray(metaOrPill.memories) ? metaOrPill.memories : (metaOrPill.memoryPill ? [metaOrPill.memoryPill] : []);
       if (mems.length > 0) {
         memoryPillsHtml = mems.map(title => {
-          const cleanTitle = title.startsWith('Memory: ') || title.startsWith('Applied Memory: ') ? title : `Memory: ${title}`;
+          const cleanTitle = title.startsWith('Memory used: ') ? title : `Memory used: ${title}`;
           return `
-            <span class="memory-pill-inline" onclick="toggleMemoryDrawer()">
+            <span class="memory-pill-inline" onclick="toggleMemoryDrawer()" title="Retrieved & applied to response">
               <span class="memory-pill-dot"></span>
               <span>${escapeHtml(cleanTitle)}</span>
             </span>
@@ -804,6 +902,7 @@ window.addEventListener('DOMContentLoaded', () => {
   renderMemoryList();
   checkBackendHealth();
   fetchMemories();
+  fetchSettings();
 
   const promptInput = document.getElementById('prompt-input');
   if (promptInput) {

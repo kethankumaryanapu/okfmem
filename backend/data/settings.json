@@ -1,0 +1,12 @@
+{
+  "memoryEnabled": true,
+  "autoSaveMemories": true,
+  "allowedCategories": [
+    "Skill",
+    "Preference",
+    "Project",
+    "Fact",
+    "General"
+  ],
+  "privacyMode": "Protected"
+}
