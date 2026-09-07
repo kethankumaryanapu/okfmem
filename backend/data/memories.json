@@ -8,7 +8,9 @@
     "confidence": 96,
     "privacy": "Protected",
     "source": "Conversation",
-    "created": "24 Aug 2026"
+    "created": "24 Aug 2026",
+    "mention_count": 1,
+    "last_seen": "24 Aug 2026"
   },
   {
     "id": "M002",
@@ -19,28 +21,99 @@
     "confidence": 94,
     "privacy": "Safe",
     "source": "Conversation",
-    "created": "24 Aug 2026"
+    "created": "24 Aug 2026",
+    "mention_count": 1,
+    "last_seen": "24 Aug 2026"
+  },
+  {
+    "id": "M003",
+    "title": "Async/Await",
+    "fact": "User prefers async/await structures.",
+    "category": "Preference",
+    "importance": "Medium",
+    "confidence": 92,
+    "privacy": "Safe",
+    "source": "Conversation",
+    "created": "23 Aug 2026",
+    "mention_count": 1,
+    "last_seen": "23 Aug 2026"
   },
   {
     "id": "M004",
-    "title": "Fastapi",
-    "fact": "User prefers working with FastAPI.",
-    "category": "Preference",
+    "title": "User Name",
+    "fact": "User name is Kethan Kumar.",
+    "category": "Fact",
     "importance": "High",
-    "confidence": 94,
-    "privacy": "Safe",
+    "confidence": 96,
+    "privacy": "Protected",
     "source": "Conversation",
-    "created": "27 Aug 2026"
+    "created": "06 Sep 2026",
+    "mention_count": 1,
+    "last_seen": "06 Sep 2026"
   },
   {
     "id": "M005",
-    "title": "currently building A Web Project",
-    "fact": "User is working on currently building a web project.",
-    "category": "Project",
+    "title": "Computer Science",
+    "fact": "User is studying Computer Science.",
+    "category": "Fact",
+    "importance": "High",
+    "confidence": 95,
+    "privacy": "Protected",
+    "source": "Conversation",
+    "created": "06 Sep 2026",
+    "mention_count": 2,
+    "last_seen": "06 Sep 2026"
+  },
+  {
+    "id": "M006",
+    "title": "React",
+    "fact": "User is learning React.",
+    "category": "Skill",
+    "importance": "High",
+    "confidence": 95,
+    "privacy": "Protected",
+    "source": "Conversation",
+    "created": "06 Sep 2026",
+    "mention_count": 1,
+    "last_seen": "06 Sep 2026"
+  },
+  {
+    "id": "M007",
+    "title": "Web Applications",
+    "fact": "User prefers working with Web Applications.",
+    "category": "Preference",
     "importance": "High",
     "confidence": 94,
     "privacy": "Protected",
     "source": "Conversation",
-    "created": "27 Aug 2026"
+    "created": "06 Sep 2026",
+    "mention_count": 1,
+    "last_seen": "06 Sep 2026"
+  },
+  {
+    "id": "M008",
+    "title": "Java Programming",
+    "fact": "User is learning Java Programming.",
+    "category": "Skill",
+    "importance": "High",
+    "confidence": 95,
+    "privacy": "Protected",
+    "source": "Conversation",
+    "created": "07 Sep 2026",
+    "mention_count": 1,
+    "last_seen": "07 Sep 2026"
+  },
+  {
+    "id": "M009",
+    "title": "LLMs",
+    "fact": "User is learning LLMs.",
+    "category": "Skill",
+    "importance": "High",
+    "confidence": 95,
+    "privacy": "Protected",
+    "source": "Conversation",
+    "created": "07 Sep 2026",
+    "mention_count": 1,
+    "last_seen": "07 Sep 2026"
   }
 ]

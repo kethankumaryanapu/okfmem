@@ -374,9 +374,9 @@
         <!-- KPI Grid -->
         <div class="grid-4">
           <div class="card">
-            <div class="kpi-title">Total Memory Records (Sample Data)</div>
-            <div class="kpi-value">1,482</div>
-            <div class="kpi-trend trend-up"><svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>+12% this month</div>
+            <div class="kpi-title">Total Memory Records</div>
+            <div class="kpi-value" id="kpi-total-memories">--</div>
+            <div class="kpi-trend trend-up"><svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>Live Synced</div>
           </div>
           <div class="card">
             <div class="kpi-title">Avg. Confidence</div>
@@ -472,28 +472,8 @@
                 <th>Last Synced</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td style="font-weight: 600; color: var(--text-main);">User is learning Python & Asyncio</td>
-                <td><span class="badge badge-amber">Skill</span></td>
-                <td class="mono">96%</td>
-                <td><span class="badge badge-teal">PL2 Protected</span></td>
-                <td class="mono">24 Aug 2026</td>
-              </tr>
-              <tr>
-                <td style="font-weight: 600; color: var(--text-main);">Working on OKFMem Architecture</td>
-                <td><span class="badge badge-blue">Project</span></td>
-                <td class="mono">94%</td>
-                <td><span class="badge badge-teal">PL1 Safe</span></td>
-                <td class="mono">24 Aug 2026</td>
-              </tr>
-              <tr>
-                <td style="font-weight: 600; color: var(--text-main);">Prefers Vanilla CSS & Clean Tokens</td>
-                <td><span class="badge badge-amber">Preference</span></td>
-                <td class="mono">92%</td>
-                <td><span class="badge badge-teal">PL1 Safe</span></td>
-                <td class="mono">23 Aug 2026</td>
-              </tr>
+            <tbody id="dashboard-recent-tbody">
+              <!-- Rendered dynamically -->
             </tbody>
           </table>
         </div>
@@ -504,9 +484,58 @@
   <script>
     function toggleTheme() {
       const html = document.documentElement;
-      const current = html.getAttribute('data-theme');
-      html.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
+      const current = html.getAttribute('data-theme') || 'dark';
+      const nextTheme = current === 'light' ? 'dark' : 'light';
+      html.setAttribute('data-theme', nextTheme);
+      localStorage.setItem('okfmem_theme', nextTheme);
     }
+    (function() {
+      const saved = localStorage.getItem('okfmem_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', saved);
+    })();
+
+    async function loadDashboardMetrics() {
+      try {
+        const res = await fetch('http://localhost:5000/api/memories');
+        const data = await res.json();
+        if (data && data.success && Array.isArray(data.memories)) {
+          const memories = data.memories;
+          const kpiEl = document.getElementById('kpi-total-memories');
+          if (kpiEl) kpiEl.textContent = memories.length;
+
+          const tbody = document.getElementById('dashboard-recent-tbody');
+          if (tbody) {
+            let html = '';
+            memories.slice(-5).reverse().forEach(m => {
+              const isProtected = (m.privacy || '').toLowerCase() === 'protected';
+              const badgeClass = isProtected ? 'badge-amber' : 'badge-teal';
+              const catBadgeClass = m.category === 'Skill' ? 'badge-amber' : (m.category === 'Project' ? 'badge-blue' : 'badge-teal');
+
+              html += `
+                <tr>
+                  <td style="font-weight: 600; color: var(--text-main);">${escapeHtml(m.title)}</td>
+                  <td><span class="badge ${catBadgeClass}">${escapeHtml(m.category || 'Skill')}</span></td>
+                  <td class="mono">${m.confidence || 94}%</td>
+                  <td><span class="badge ${badgeClass}">${m.privacy || 'Safe'}</span></td>
+                  <td class="mono">${m.created || '24 Aug 2026'}</td>
+                </tr>
+              `;
+            });
+            tbody.innerHTML = html;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load dashboard metrics:', err);
+      }
+    }
+
+    function escapeHtml(str) {
+      const d = document.createElement('div');
+      d.textContent = str || '';
+      return d.innerHTML;
+    }
+
+    window.addEventListener('DOMContentLoaded', loadDashboardMetrics);
   </script>
 </body>
 </html>

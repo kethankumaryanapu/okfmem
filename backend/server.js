@@ -9,6 +9,40 @@ app.use(express.json());
 
 const path = require('path');
 const fs = require('fs');
+
+function loadEnvFile() {
+  const envPaths = [
+    path.resolve(__dirname, '..', '.env'),
+    path.resolve(__dirname, '.env')
+  ];
+  for (const envPath of envPaths) {
+    if (fs.existsSync(envPath)) {
+      try {
+        const content = fs.readFileSync(envPath, 'utf8');
+        content.split(/\r?\n/).forEach(line => {
+          const trimmed = line.trim();
+          if (trimmed && !trimmed.startsWith('#')) {
+            const eqIdx = trimmed.indexOf('=');
+            if (eqIdx > 0) {
+              const key = trimmed.substring(0, eqIdx).trim();
+              let val = trimmed.substring(eqIdx + 1).trim();
+              if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+                val = val.substring(1, val.length - 1);
+              }
+              if (key && !process.env[key]) {
+                process.env[key] = val;
+              }
+            }
+          }
+        });
+      } catch (err) {
+        console.error('Error parsing .env file:', err.message);
+      }
+    }
+  }
+}
+loadEnvFile();
+
 const AdmZip = require('adm-zip');
 const { generateOKFConcept } = require('./okf/okfGenerator');
 
@@ -283,7 +317,7 @@ function runMemPrivacyService(text) {
     const pythonPath = 'python';
     const scriptPath = path.resolve(__dirname, 'memprivacy', 'service.py');
 
-    execFile(pythonPath, [scriptPath, text], { cwd: __dirname }, (error, stdout, stderr) => {
+    execFile(pythonPath, [scriptPath, text], { cwd: __dirname, env: process.env }, (error, stdout, stderr) => {
       if (error) {
         return reject(new Error(`MemPrivacy execution error: ${stderr || error.message}`));
       }
@@ -297,14 +331,15 @@ function runMemPrivacyService(text) {
   });
 }
 
-function runMemPrivacyChat(text, memoriesList = [], settingsObj = null) {
+function runMemPrivacyChat(text, memoriesList = [], settingsObj = null, history = []) {
   return new Promise((resolve, reject) => {
     const pythonPath = 'python';
     const scriptPath = path.resolve(__dirname, 'memprivacy', 'service.py');
     const jsonMemories = JSON.stringify(memoriesList || []);
     const jsonSettings = JSON.stringify(settingsObj || userSettings || {});
+    const jsonHistory = JSON.stringify(history || []);
 
-    execFile(pythonPath, [scriptPath, 'chat', text, jsonMemories, jsonSettings], { cwd: __dirname }, (error, stdout, stderr) => {
+    execFile(pythonPath, [scriptPath, 'chat', text, jsonMemories, jsonSettings, jsonHistory], { cwd: __dirname, env: process.env }, (error, stdout, stderr) => {
       if (error) {
         return reject(new Error(`MemPrivacy execution error: ${stderr || error.message}`));
       }
@@ -332,49 +367,55 @@ function isFuzzyDuplicate(cand, existingMem) {
   const normFact = (cand.fact || '').trim().toLowerCase();
   const mTitle = (existingMem.title || '').trim().toLowerCase();
   const mFact = (existingMem.fact || '').trim().toLowerCase();
+  const candCat = (cand.category || 'Skill').trim().toLowerCase();
+  const mCat = (existingMem.category || 'Skill').trim().toLowerCase();
 
   if (!normTitle && !normFact) return false;
 
-  // 1. Exact title or fact match
-  if ((normTitle && mTitle === normTitle) || (normFact && mFact === normFact)) {
+  // 1. Exact title match (same category) or exact fact match
+  if ((candCat === mCat && normTitle && mTitle === normTitle) || (normFact && mFact === normFact)) {
     return true;
   }
 
-  // 2. Title substring containment match (for titles >= 3 chars)
-  if (normTitle && mTitle && normTitle.length >= 3 && mTitle.length >= 3) {
-    if (mTitle.includes(normTitle) || normTitle.includes(mTitle)) {
+  // 2. Title match after removing category suffixes (same category only)
+  if (candCat === mCat && normTitle && mTitle && normTitle.length >= 3 && mTitle.length >= 3) {
+    const cleanT1 = normTitle.replace(/\s*(?:project|app|application|framework|language)\b/g, '').trim();
+    const cleanT2 = mTitle.replace(/\s*(?:project|app|application|framework|language)\b/g, '').trim();
+    if (cleanT1 && cleanT2 && cleanT1 === cleanT2) {
       return true;
     }
   }
 
-  // 3. Fact key term overlap match
-  const stopwords = new Set([
-    'a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
-    'in', 'on', 'at', 'to', 'for', 'from', 'with', 'by', 'about', 'user',
-    'and', 'or', 'my', 'i', 'am', 'working', 'learning', 'prefers', 'likes'
-  ]);
+  // 3. Fact key term overlap match (same category only)
+  if (candCat === mCat) {
+    const stopwords = new Set([
+      'a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+      'in', 'on', 'at', 'to', 'for', 'from', 'with', 'by', 'about', 'user',
+      'and', 'or', 'my', 'i', 'am', 'working', 'learning', 'prefers', 'likes'
+    ]);
 
-  const getTokens = (text) => {
-    return new Set(
-      (text || '')
-        .toLowerCase()
-        .replace(/[^a-z0-9_#+.\-<>]/g, ' ')
-        .split(/\s+/)
-        .filter(t => t.length > 2 && !stopwords.has(t))
-    );
-  };
+    const getTokens = (text) => {
+      return new Set(
+        (text || '')
+          .toLowerCase()
+          .replace(/[^a-z0-9_#+.\-<>]/g, ' ')
+          .split(/\s+/)
+          .filter(t => t.length > 2 && !stopwords.has(t))
+      );
+    };
 
-  const tokens1 = getTokens(normFact);
-  const tokens2 = getTokens(mFact);
+    const tokens1 = getTokens(normFact);
+    const tokens2 = getTokens(mFact);
 
-  if (tokens1.size > 0 && tokens2.size > 0) {
-    let matchCount = 0;
-    for (const t of tokens1) {
-      if (tokens2.has(t)) matchCount++;
-    }
-    const minSize = Math.min(tokens1.size, tokens2.size);
-    if (minSize > 0 && (matchCount / minSize) >= 0.7) {
-      return true;
+    if (tokens1.size >= 2 && tokens2.size >= 2) {
+      let matchCount = 0;
+      for (const t of tokens1) {
+        if (tokens2.has(t)) matchCount++;
+      }
+      const unionSize = tokens1.size + tokens2.size - matchCount;
+      if (unionSize > 0 && (matchCount / unionSize) >= 0.7) {
+        return true;
+      }
     }
   }
 
@@ -396,24 +437,42 @@ function updateMemoryInteraction(mem) {
     mem.importance = 'High';
   }
 
-  try {
-    generateOKFConcept(mem);
-  } catch (okfErr) {
-    console.error(`Failed to update OKF concept for memory ${mem.id}:`, okfErr);
-  }
-
   return mem;
+}
+
+function sanitizeResponsePlaceholders(text) {
+  if (!text || typeof text !== 'string') return text || '';
+  let cleaned = text
+    .replace(/<[A-Za-z_]+_\d+>/gi, (match) => {
+      if (/real_name|name/i.test(match)) return 'you';
+      if (/email/i.test(match)) return 'your email address';
+      if (/phone/i.test(match)) return 'your phone number';
+      if (/verification|otp/i.test(match)) return 'verification code';
+      if (/address/i.test(match)) return 'your address';
+      return '';
+    })
+    .replace(/\b(?:real_name|email_address|phone_number|detailed_address|medical_health|financial_account|id_number|verification_code|password|key|token|mask)_[0-9]+\b/gi, (match) => {
+      if (/real_name/i.test(match)) return 'you';
+      if (/email/i.test(match)) return 'your email address';
+      if (/phone/i.test(match)) return 'your phone number';
+      if (/verification|otp/i.test(match)) return 'verification code';
+      if (/address/i.test(match)) return 'your address';
+      return '';
+    });
+  return cleaned.replace(/[ \t]{2,}/g, ' ').replace(/\s+([.,!?:;])/g, '$1').trim();
 }
 
 app.post('/api/chat', async (req, res) => {
   try {
-    const { text, message } = req.body || {};
+    const { text, message, history, context } = req.body || {};
     const inputMessage = text || message;
     if (!inputMessage || typeof inputMessage !== 'string') {
       return res.status(400).json({ success: false, error: 'Message input text is required' });
     }
 
-    const result = await runMemPrivacyChat(inputMessage, memories, userSettings);
+    const conversationHistory = Array.isArray(history) ? history : (Array.isArray(context) ? context : []);
+
+    const result = await runMemPrivacyChat(inputMessage, memories, userSettings, conversationHistory);
     if (!result.success) {
       return res.status(500).json({
         success: false,
@@ -422,6 +481,8 @@ app.post('/api/chat', async (req, res) => {
     }
 
     const createdMemories = [];
+    const okfQueue = [];
+    let memoriesUpdated = false;
 
     // Task 15 Memory Control & Rules
     // 15.1: If memoryEnabled is OFF, do not extract or persist new memories
@@ -448,6 +509,8 @@ app.post('/api/chat', async (req, res) => {
         if (existingMem) {
           // Task 11: Increment mention_count, update last_seen, promote importance if threshold reached
           updateMemoryInteraction(existingMem);
+          okfQueue.push(existingMem);
+          memoriesUpdated = true;
         } else if (userSettings.autoSaveMemories) {
           // Auto-Save ON (15.1): Persist newly extracted memory
           const maxNum = memories.reduce((max, item) => {
@@ -473,28 +536,42 @@ app.post('/api/chat', async (req, res) => {
 
           memories.push(newMem);
           createdMemories.push(newMem);
-
-          // Automatically generate OKF Concept document for the extracted memory
-          try {
-            generateOKFConcept(newMem);
-          } catch (okfErr) {
-            console.error(`Failed to generate OKF concept for memory ${newMem.id}:`, okfErr);
-          }
+          okfQueue.push(newMem);
+          memoriesUpdated = true;
         }
-      }
-
-      if (createdMemories.length > 0) {
-        saveMemories(memories);
       }
     }
 
+    const safeResponse = sanitizeResponsePlaceholders(result.response);
+
+    // Send response immediately to unblock HTTP client
     res.json({
       success: true,
-      response: result.response,
+      response: safeResponse,
       used_memories: result.used_memories || [],
       extracted_memories: createdMemories,
       provider: result.provider || 'offline'
     });
+
+    // Asynchronously persist memories and generate/update OKF concept files
+    if (memoriesUpdated || okfQueue.length > 0) {
+      setImmediate(() => {
+        try {
+          if (memoriesUpdated) {
+            saveMemories(memories);
+          }
+          for (const mem of okfQueue) {
+            try {
+              generateOKFConcept(mem);
+            } catch (okfErr) {
+              console.error(`Failed to generate OKF concept for memory ${mem.id}:`, okfErr);
+            }
+          }
+        } catch (persistErr) {
+          console.error('Async memory/OKF persistence error:', persistErr);
+        }
+      });
+    }
   } catch (error) {
     res.status(500).json({
       success: false,

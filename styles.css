@@ -412,6 +412,7 @@ html, body {
   color: var(--text-primary);
   background: linear-gradient(135deg, #FFFFFF 0%, #CBD5E1 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -1301,4 +1302,188 @@ button[disabled] {
   border-color: transparent !important;
   box-shadow: none !important;
 }
+
+/* ==========================================================================
+   White / Light Theme Overrides (Clean Light Mode)
+   ========================================================================== */
+html[data-theme="light"] {
+  --bg-primary: #F8FAFC;
+  --bg-secondary: #F1F5F9;
+  
+  --surface-main: #FFFFFF;
+  --surface-elevated: #FFFFFF;
+  --surface-hover: #F1F5F9;
+  --surface-inset: #F8FAFC;
+  --surface-glass: rgba(255, 255, 255, 0.92);
+
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-medium: rgba(0, 0, 0, 0.14);
+  --border-strong: rgba(0, 0, 0, 0.28);
+  --border-glow: rgba(220, 38, 38, 0.3);
+
+  --red-primary: #DC2626;
+  --red-accent: #EF4444;
+  --red-deep: #991B1B;
+  --red-subtle-bg: rgba(220, 38, 38, 0.08);
+  --red-subtle-border: rgba(220, 38, 38, 0.25);
+
+  --amber-primary: #D97706;
+  --amber-bg: rgba(217, 119, 6, 0.08);
+  --amber-border: rgba(217, 119, 6, 0.25);
+
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  --text-muted: #64748B;
+  --text-disabled: #94A3B8;
+
+  --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-elevated: 0 12px 36px -4px rgba(0, 0, 0, 0.1), 0 0 1px inset rgba(0, 0, 0, 0.1);
+  --shadow-drawer: -12px 0 40px rgba(0, 0, 0, 0.12);
+  --shadow-glow-red: 0 0 20px rgba(220, 38, 38, 0.15);
+}
+
+/* Light Theme Header & Header Controls */
+html[data-theme="light"] .chatbot-header {
+  background: rgba(255, 255, 255, 0.92);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+/* Preserve exact original logo styling across themes without color/background alterations */
+html[data-theme="light"] .brand-logo,
+html[data-theme="light"] .brand-icon {
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5)) !important;
+  background: inherit;
+  color: inherit;
+}
+
+html[data-theme="light"] .btn-ghost {
+  color: #334155;
+}
+
+html[data-theme="light"] .btn-ghost:hover:not(:disabled) {
+  background-color: #F1F5F9;
+  color: #0F172A;
+}
+
+html[data-theme="light"] .btn-icon {
+  background-color: #FFFFFF;
+  border-color: rgba(0, 0, 0, 0.12);
+  color: #334155;
+}
+
+html[data-theme="light"] .privacy-indicator {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.25);
+  color: #059669;
+}
+
+html[data-theme="light"] .memory-access-badge {
+  background: #F1F5F9;
+  border-color: rgba(0, 0, 0, 0.12);
+  color: #0F172A;
+}
+
+/* Light Theme Welcome State & Hero Title */
+html[data-theme="light"] .welcome-title {
+  background: linear-gradient(135deg, #0F172A 0%, #334155 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+html[data-theme="light"] .welcome-subtitle {
+  color: #475569;
+}
+
+html[data-theme="light"] .suggestion-card {
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: #334155;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+html[data-theme="light"] .suggestion-card strong {
+  color: #0F172A !important;
+}
+
+html[data-theme="light"] .suggestion-icon-wrapper {
+  background: rgba(220, 38, 38, 0.08);
+  border-color: rgba(220, 38, 38, 0.2);
+  color: #DC2626;
+}
+
+/* Light Theme Chat Messages & Prompt Bar */
+html[data-theme="light"] .msg-user .msg-bubble {
+  background: linear-gradient(135deg, #E2E8F0 0%, #CBD5E1 100%);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: #0F172A;
+}
+
+html[data-theme="light"] .msg-assistant .msg-bubble {
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: #0F172A;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+html[data-theme="light"] .prompt-bar-wrapper {
+  background: linear-gradient(180deg, transparent 0%, rgba(248, 250, 252, 0.85) 30%, #F8FAFC 100%);
+}
+
+html[data-theme="light"] .prompt-bar-inner {
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+}
+
+html[data-theme="light"] .shortcut-hint {
+  background: #F1F5F9;
+  color: #64748B;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* Light Theme Drawers & Modals */
+html[data-theme="light"] .side-drawer {
+  background: #FFFFFF;
+  border-left: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.08);
+}
+
+html[data-theme="light"] .drawer-header {
+  background: #F8FAFC;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+html[data-theme="light"] .modal-backdrop {
+  background: rgba(15, 23, 42, 0.4);
+}
+
+html[data-theme="light"] .modal-card {
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+}
+
+html[data-theme="light"] .modal-card-header,
+html[data-theme="light"] .modal-card-footer {
+  background: #F8FAFC;
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+html[data-theme="light"] .settings-nav {
+  background: #F8FAFC;
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+html[data-theme="light"] .okf-json-box {
+  background: #F8FAFC;
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+html[data-theme="light"] .okf-json-box code {
+  color: #1E40AF;
+}
+
+
 

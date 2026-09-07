@@ -225,7 +225,6 @@
 
         <!-- Reassurance Hero Banner -->
         <div class="hero-card">
-        <div class="hero-card">
           <div class="hero-text">
             <div class="hero-title">You Control What Your AI Remembers & Shares</div>
             <div class="hero-sub">MemPrivacy desensitizes raw PII spans on-device before any memory trace leaves your local machine. Cloud AI models only see typed placeholders like <span class="mono">&lt;Real_Name_1&gt;</span>.</div>
@@ -323,9 +322,15 @@
   <script>
     function toggleTheme() {
       const html = document.documentElement;
-      const current = html.getAttribute('data-theme');
-      html.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
+      const current = html.getAttribute('data-theme') || 'dark';
+      const nextTheme = current === 'light' ? 'dark' : 'light';
+      html.setAttribute('data-theme', nextTheme);
+      localStorage.setItem('okfmem_theme', nextTheme);
     }
+    (function() {
+      const saved = localStorage.getItem('okfmem_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', saved);
+    })();
   </script>
 </body>
 </html>

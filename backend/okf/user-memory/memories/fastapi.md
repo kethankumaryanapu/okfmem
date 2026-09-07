@@ -1,6 +1,6 @@
 ---
 type: User Preference
-title: Fastapi
+title: FastAPI
 description: User prefers working with FastAPI.
 importance: High
 tags:
@@ -8,6 +8,6 @@ tags:
   - preference
 ---
 
-# Fastapi
+# FastAPI
 
 User prefers working with FastAPI.

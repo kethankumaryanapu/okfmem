@@ -271,19 +271,19 @@ function renderMemoryList() {
   const searchInput = document.getElementById('memory-search-input');
   const badgeCount = document.getElementById('memory-badge-count');
 
+  if (badgeCount) badgeCount.textContent = memories.length;
+
   if (!container) return;
 
   const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
   let filtered = memories.filter(m => {
-    const matchesCat = activeMemoryFilter === "All" || m.category.toLowerCase() === activeMemoryFilter.toLowerCase();
-    const matchesQuery = m.title.toLowerCase().includes(query) ||
-                         m.fact.toLowerCase().includes(query) ||
-                         m.category.toLowerCase().includes(query);
+    const matchesCat = activeMemoryFilter === "All" || (m.category || '').toLowerCase() === activeMemoryFilter.toLowerCase();
+    const matchesQuery = (m.title || '').toLowerCase().includes(query) ||
+                         (m.fact || '').toLowerCase().includes(query) ||
+                         (m.category || '').toLowerCase().includes(query);
     return matchesCat && matchesQuery;
   });
-
-  if (badgeCount) badgeCount.textContent = memories.length;
 
   if (filtered.length === 0) {
     container.innerHTML = `<div style="padding: 24px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">No memory records found.</div>`;
@@ -325,10 +325,17 @@ function openMemoryDetailById(id) {
   const modal = document.getElementById('memory-modal');
   if (!modal) return;
 
-  document.getElementById('detail-fact').textContent = m.fact;
-  document.getElementById('detail-category').textContent = m.category;
-  document.getElementById('detail-importance').textContent = m.importance;
-  document.getElementById('detail-confidence').textContent = typeof m.confidence === 'number' ? `${m.confidence}%` : (m.confidence || '');
+  const factEl = document.getElementById('detail-fact');
+  if (factEl) factEl.textContent = m.fact;
+
+  const catEl = document.getElementById('detail-category');
+  if (catEl) catEl.textContent = m.category;
+
+  const impEl = document.getElementById('detail-importance');
+  if (impEl) impEl.textContent = m.importance;
+
+  const confEl = document.getElementById('detail-confidence');
+  if (confEl) confEl.textContent = typeof m.confidence === 'number' ? `${m.confidence}%` : (m.confidence || '');
 
   const privEl = document.getElementById('detail-privacy');
   if (privEl) {
@@ -712,10 +719,24 @@ async function generateAIResponse(userText, currentChatObj) {
   let metaInfo = { provider: null, memories: [] };
 
   try {
+    const allPriorMessages = (currentChatObj && Array.isArray(currentChatObj.messages))
+      ? currentChatObj.messages.slice(0, -1)
+      : [];
+    const recentHistory = allPriorMessages
+      .filter(m => m && m.text && !m.text.startsWith('Error:'))
+      .slice(-6)
+      .map(m => ({
+        role: m.sender === 'assistant' ? 'model' : 'user',
+        text: m.text
+      }));
+
     const res = await fetch('http://localhost:5000/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: userText })
+      body: JSON.stringify({
+        text: userText,
+        history: recentHistory
+      })
     });
 
     const data = await res.json();

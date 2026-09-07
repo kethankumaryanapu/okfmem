@@ -109,10 +109,38 @@ class PrivacyStore:
         return mask
 
     def query_by_mask(self, mask: str) -> Optional[Dict]:
+        if not mask or not isinstance(mask, str):
+            return None
+        clean_mask = mask.strip()
+        # 1. Exact match
         row = self._conn.execute(
-            "SELECT * FROM privacy_items WHERE mask = ?", (mask,)
+            "SELECT * FROM privacy_items WHERE mask = ?", (clean_mask,)
         ).fetchone()
-        return dict(row) if row else None
+        if row:
+            return dict(row)
+        # 2. Case-insensitive match
+        row = self._conn.execute(
+            "SELECT * FROM privacy_items WHERE mask = ? COLLATE NOCASE", (clean_mask,)
+        ).fetchone()
+        if row:
+            return dict(row)
+        # 3. If unbracketed token provided, try matching bracketed
+        if not clean_mask.startswith("<") and not clean_mask.endswith(">"):
+            bracketed = f"<{clean_mask}>"
+            row = self._conn.execute(
+                "SELECT * FROM privacy_items WHERE mask = ? COLLATE NOCASE", (bracketed,)
+            ).fetchone()
+            if row:
+                return dict(row)
+        # 4. If bracketed token provided, try matching unbracketed
+        elif clean_mask.startswith("<") and clean_mask.endswith(">"):
+            unbracketed = clean_mask[1:-1]
+            row = self._conn.execute(
+                "SELECT * FROM privacy_items WHERE mask = ? COLLATE NOCASE", (unbracketed,)
+            ).fetchone()
+            if row:
+                return dict(row)
+        return None
 
     def query_by_original_text(self, original_text: str) -> Optional[Dict]:
         row = self._conn.execute(
@@ -204,13 +232,17 @@ def mask_dialogue(
 # 2. unmask_dialogue  —  restore masks back to original text
 # ---------------------------------------------------------------------------
 
-_MASK_PATTERN = re.compile(r"<[A-Za-z_]+_\d+>")
+_BRACKETED_MASK_PATTERN = re.compile(r"<[A-Za-z_]+_\d+>", re.IGNORECASE)
+_BARE_MASK_PATTERN = re.compile(
+    r"\b(?:real_name|email_address|phone_number|detailed_address|medical_health|financial_account|id_number|verification_code|password|key|token|mask)_[0-9]+\b",
+    re.IGNORECASE
+)
 
 
 def unmask_dialogue(masked_text: str, store: PrivacyStore) -> str:
     """
-    Find all ``<Type_N>`` mask tokens in *masked_text* and replace them with
-    the corresponding original privacy text from the store.
+    Find all mask tokens (both '<Type_N>' and bare 'type_n') in *masked_text*
+    and replace them with the corresponding original privacy text from the store.
 
     Args:
         masked_text:  Text that may contain mask tokens.
@@ -219,15 +251,29 @@ def unmask_dialogue(masked_text: str, store: PrivacyStore) -> str:
     Returns:
         The unmasked text.
     """
+    if not masked_text or not isinstance(masked_text, str):
+        return masked_text
 
-    def _replace(match: re.Match) -> str:
+    def _replace_bracketed(match: re.Match) -> str:
         mask = match.group(0)
         record = store.query_by_mask(mask)
         if record:
             return record["original_text"]
         return mask
 
-    return _MASK_PATTERN.sub(_replace, masked_text)
+    # 1. Restore bracketed mask tokens (<Type_N>)
+    restored = _BRACKETED_MASK_PATTERN.sub(_replace_bracketed, masked_text)
+
+    # 2. Restore bare mask tokens that lost their brackets (type_n)
+    def _replace_bare(match: re.Match) -> str:
+        token = match.group(0)
+        record = store.query_by_mask(token)
+        if record:
+            return record["original_text"]
+        return token
+
+    restored = _BARE_MASK_PATTERN.sub(_replace_bare, restored)
+    return restored
 
 
 # ---------------------------------------------------------------------------
