@@ -749,7 +749,7 @@ async function generateAIResponse(userText, currentChatObj) {
 
       const memoryTitles = new Set();
 
-      // Task 15.4 Explainable Memory Retrieval: Use actual used_memories returned by backend
+      // Task 15.4 & Task 2B Explainable Memory Retrieval: Preserve complete used_memories with explanation
       if (Array.isArray(data.used_memories) && data.used_memories.length > 0) {
         data.used_memories.forEach(m => {
           if (m && m.title) memoryTitles.add(m.title);
@@ -757,6 +757,7 @@ async function generateAIResponse(userText, currentChatObj) {
       }
 
       metaInfo.memories = Array.from(memoryTitles);
+      metaInfo.used_memories = Array.isArray(data.used_memories) ? data.used_memories : [];
 
       if (Array.isArray(data.extracted_memories) && data.extracted_memories.length > 0) {
         await fetchMemories();
@@ -823,8 +824,132 @@ function renderAssistantMessage(responseText, timeStr, metaOrPill) {
         `;
       }
 
+      // Task 2B Explainable Memory Retrieval: Render interactive popovers if used_memories available
+      const usedMemoriesList = (Array.isArray(metaOrPill.used_memories) && metaOrPill.used_memories.length > 0)
+        ? metaOrPill.used_memories
+        : null;
+
       const mems = Array.isArray(metaOrPill.memories) ? metaOrPill.memories : (metaOrPill.memoryPill ? [metaOrPill.memoryPill] : []);
-      if (mems.length > 0) {
+
+      if (usedMemoriesList) {
+        memoryPillsHtml = usedMemoriesList.map((m, idx) => {
+          const title = m.title || 'Untitled Memory';
+          const cleanTitle = title.startsWith('Memory used: ') ? title : `Memory used: ${title}`;
+          const exp = m.retrieval_explanation;
+
+          // Legacy or fallback if no retrieval_explanation
+          if (!exp) {
+            return `
+              <span class="memory-pill-inline" onclick="toggleMemoryDrawer()" title="Retrieved & applied to response">
+                <span class="memory-pill-dot"></span>
+                <span>${escapeHtml(cleanTitle)}</span>
+              </span>
+            `;
+          }
+
+          const scoreVal = typeof exp.score === 'number' ? exp.score.toFixed(1) : (exp.score || '1.0');
+          const rankVal = exp.rank || (idx + 1);
+          const categoryVal = m.category || 'General';
+          const matchedTerms = Array.isArray(exp.matched_terms) ? exp.matched_terms : [];
+          const matchedFields = Array.isArray(exp.matched_fields) ? exp.matched_fields : [];
+          const breakdown = exp.score_breakdown || { keyword: 1.0, importance: 0.1, mention: 0.0 };
+          const reasonText = exp.reason || `Matched keywords in ${categoryVal} memory.`;
+
+          const termsHtml = matchedTerms.length > 0
+            ? matchedTerms.map(t => `<span class="retrieval-tag">${escapeHtml(t)}</span>`).join('')
+            : '<span class="retrieval-tag" style="opacity: 0.6;">Relevant query terms</span>';
+
+          const fieldsHtml = matchedFields.length > 0
+            ? matchedFields.map(f => `<span class="retrieval-tag retrieval-tag-field">${escapeHtml(f.charAt(0).toUpperCase() + f.slice(1))}</span>`).join('')
+            : '<span class="retrieval-tag retrieval-tag-field">Content</span>';
+
+          const kwScore = typeof breakdown.keyword === 'number' ? breakdown.keyword.toFixed(1) : '1.0';
+          const impScore = typeof breakdown.importance === 'number' ? breakdown.importance.toFixed(1) : '0.1';
+          const menScore = typeof breakdown.mention === 'number' ? breakdown.mention.toFixed(1) : '0.0';
+
+          return `
+            <div class="retrieval-pill-container">
+              <button type="button" class="memory-pill-inline memory-pill-explainable" onclick="toggleRetrievalExplanation(this, event)" title="Click to see why this memory was used" aria-expanded="false">
+                <span class="memory-pill-dot"></span>
+                <span>${escapeHtml(cleanTitle)}</span>
+                <span class="pill-explain-badge">Why?</span>
+              </button>
+              <div class="retrieval-explanation-popover" onclick="event.stopPropagation()">
+                <div class="retrieval-popover-header">
+                  <div class="retrieval-popover-title">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    <span>Why was this memory used?</span>
+                  </div>
+                  <button type="button" class="btn btn-icon btn-xs" onclick="closeAllRetrievalPopovers()" title="Close explanation" style="padding: 2px;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                  </button>
+                </div>
+
+                <div class="retrieval-mem-header">
+                  <div class="retrieval-mem-title">${escapeHtml(title)}</div>
+                  <span class="retrieval-category-badge">${escapeHtml(categoryVal)}</span>
+                </div>
+
+                <div class="retrieval-metrics-row">
+                  <div class="retrieval-metric">
+                    <span class="metric-label">Relevance Score</span>
+                    <span class="metric-value score-highlight">${escapeHtml(scoreVal)}</span>
+                  </div>
+                  <div class="retrieval-metric">
+                    <span class="metric-label">Retrieval Rank</span>
+                    <span class="metric-value rank-highlight">#${escapeHtml(String(rankVal))}</span>
+                  </div>
+                </div>
+
+                <div class="retrieval-section">
+                  <div class="retrieval-section-label">Matched terms</div>
+                  <div class="retrieval-tags-list">
+                    ${termsHtml}
+                  </div>
+                </div>
+
+                <div class="retrieval-section">
+                  <div class="retrieval-section-label">Matched fields</div>
+                  <div class="retrieval-tags-list">
+                    ${fieldsHtml}
+                  </div>
+                </div>
+
+                <div class="retrieval-section">
+                  <div class="retrieval-section-label">Score breakdown</div>
+                  <div class="score-breakdown-grid">
+                    <div class="breakdown-row">
+                      <span class="breakdown-name">Keyword match</span>
+                      <span class="breakdown-score">+${escapeHtml(kwScore)}</span>
+                    </div>
+                    <div class="breakdown-row">
+                      <span class="breakdown-name">Importance</span>
+                      <span class="breakdown-score">+${escapeHtml(impScore)}</span>
+                    </div>
+                    <div class="breakdown-row">
+                      <span class="breakdown-name">Previous mentions</span>
+                      <span class="breakdown-score">+${escapeHtml(menScore)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="retrieval-section" style="margin-bottom: 0;">
+                  <div class="retrieval-section-label">Reason</div>
+                  <div class="retrieval-reason-box">
+                    ${escapeHtml(reasonText)}
+                  </div>
+                </div>
+
+                <div class="retrieval-popover-footer">
+                  <button type="button" class="btn btn-ghost btn-xs" onclick="toggleMemoryDrawer(); closeAllRetrievalPopovers();" style="width: 100%; justify-content: center;">
+                    <span>Open Memory Drawer ➔</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } else if (mems.length > 0) {
         memoryPillsHtml = mems.map(title => {
           const cleanTitle = title.startsWith('Memory used: ') ? title : `Memory used: ${title}`;
           return `
@@ -864,6 +989,46 @@ function renderAssistantMessage(responseText, timeStr, metaOrPill) {
   container.appendChild(msgDiv);
 }
 
+/* ==========================================================================
+   Task 2B: Explainable Memory Retrieval Popover Interaction
+   ========================================================================== */
+
+function toggleRetrievalExplanation(btn, event) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+  const container = btn.closest('.retrieval-pill-container');
+  if (!container) return;
+
+  const popover = container.querySelector('.retrieval-explanation-popover');
+  if (!popover) return;
+
+  const wasActive = popover.classList.contains('active');
+  closeAllRetrievalPopovers();
+
+  if (!wasActive) {
+    popover.classList.add('active');
+    btn.setAttribute('aria-expanded', 'true');
+  }
+}
+
+function closeAllRetrievalPopovers() {
+  document.querySelectorAll('.retrieval-explanation-popover.active').forEach(p => {
+    p.classList.remove('active');
+  });
+  document.querySelectorAll('.memory-pill-explainable[aria-expanded="true"]').forEach(b => {
+    b.setAttribute('aria-expanded', 'false');
+  });
+}
+
+// Close popovers on click outside
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.retrieval-pill-container')) {
+    closeAllRetrievalPopovers();
+  }
+});
+
 function scrollToBottom() {
   const stream = document.getElementById('chat-stream');
   if (stream) stream.scrollTop = stream.scrollHeight;
@@ -878,6 +1043,7 @@ function escapeHtml(text) {
 // Global ESC listener to close open modals or drawers
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
+    closeAllRetrievalPopovers();
     closeMemoryModal();
     closeOKFModal();
     closeSettingsModal();

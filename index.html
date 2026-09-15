@@ -18,7 +18,12 @@
     <!-- Top Navigation Header -->
     <header class="chatbot-header">
       <div class="brand-group">
-        <img src="logo.png" alt="OKFMem Logo" class="brand-logo">
+        <button class="btn btn-ghost btn-icon btn-sidebar-toggle" id="btn-sidebar-toggle" onclick="toggleSidebar()" title="Toggle Navigation Menu">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+        <a href="index.html" class="brand-link" style="display: flex; align-items: center; text-decoration: none;">
+          <img src="logo.png" alt="OKFMem Logo" class="brand-logo" width="140" height="38">
+        </a>
         <div class="header-divider"></div>
         <button class="btn btn-ghost" id="btn-new-chat" onclick="startNewChat()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -32,15 +37,15 @@
 
       <div class="header-actions">
         <!-- Privacy Shield Indicator -->
-        <div class="privacy-indicator" title="MemPrivacy Active • Data Shielding Enabled">
+        <a href="privacy.html" class="privacy-indicator" style="text-decoration: none;" title="MemPrivacy Active • Data Shielding Enabled">
           <span class="privacy-indicator-dot"></span>
           <span>Privacy Protected</span>
-        </div>
+        </a>
 
         <!-- Memory Access Badge Trigger -->
         <button class="memory-access-badge" id="btn-memory-drawer" onclick="toggleMemoryDrawer()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
-          <span>Memory</span>
+          <span>Memory Center</span>
           <span class="memory-badge-counter" id="memory-badge-count">3</span>
         </button>
 
@@ -55,14 +60,115 @@
         <div class="header-divider"></div>
 
         <!-- User Profile Avatar -->
-        <div class="user-avatar" id="user-profile-btn" title="Kethan Kumar • Admin" onclick="triggerToast('User Profile: Kethan (Admin)')">
+        <a href="profile.html" class="user-avatar" id="user-profile-btn" title="Kethan Kumar • Admin" style="text-decoration: none;">
           KY
-        </div>
+        </a>
       </div>
     </header>
 
-    <!-- Main Chatbot Conversation Area -->
-    <main class="chatbot-main">
+    <!-- Shell Body: Sidebar + Main Chatbot Conversation Area -->
+    <div class="shell-body">
+
+      <!-- Left Navigation Sidebar -->
+      <aside class="okf-sidebar" id="okf-sidebar">
+        <div>
+          <!-- MAIN Section -->
+          <div class="okf-nav-section">
+            <div class="okf-nav-label">MAIN</div>
+            <ul class="okf-nav-list">
+              <li class="okf-nav-item active">
+                <a href="index.html" data-tooltip="AI Chat">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  <span class="nav-label-text">Chat</span>
+                </a>
+              </li>
+              <li class="okf-nav-item">
+                <a href="memories.html" data-tooltip="Memory Center">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                  <span class="nav-label-text">Memory Center</span>
+                </a>
+              </li>
+              <li class="okf-nav-item">
+                <a href="privacy.html" data-tooltip="MemPrivacy">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  <span class="nav-label-text">Privacy</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- DATA & KNOWLEDGE Section -->
+          <div class="okf-nav-section">
+            <div class="okf-nav-label">DATA & KNOWLEDGE</div>
+            <ul class="okf-nav-list">
+              <li class="okf-nav-item">
+                <a href="okf-import-export.html" data-tooltip="OKF / Portability">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  <span class="nav-label-text">OKF / Portability</span>
+                </a>
+              </li>
+              <li class="okf-nav-item">
+                <a href="activity.html" data-tooltip="Activity Log">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                  <span class="nav-label-text">Activity</span>
+                </a>
+              </li>
+              <li class="okf-nav-item">
+                <a href="analytics.html" data-tooltip="Analytics">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                  <span class="nav-label-text">Analytics</span>
+                </a>
+              </li>
+              <li class="okf-nav-item">
+                <a href="memory-timeline.html" data-tooltip="Timeline">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  <span class="nav-label-text">Timeline</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- SYSTEM Section -->
+          <div class="okf-nav-section">
+            <div class="okf-nav-label">SYSTEM</div>
+            <ul class="okf-nav-list">
+              <li class="okf-nav-item">
+                <a href="settings.html" data-tooltip="System Settings">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                  <span class="nav-label-text">Settings</span>
+                </a>
+              </li>
+              <li class="okf-nav-item">
+                <a href="profile.html" data-tooltip="User Profile">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  <span class="nav-label-text">Profile</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Sidebar Footer Status -->
+        <div class="mc-sidebar-footer">
+          <div class="mc-system-status">
+            <div class="mc-status-row">
+              <span style="font-weight: 600; color: var(--text-primary);">OKF v0.2 Engine</span>
+              <span class="privacy-indicator-dot" style="margin: 0;"></span>
+            </div>
+            <div class="okf-sidebar-footer-text">Sync: backend/okf/user-memory</div>
+            <div class="mc-status-row" style="margin-top: 4px;">
+              <span>MemPrivacy:</span>
+              <span style="color: var(--status-success); font-weight: 600;">Active PL2</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Overlay for mobile drawer -->
+      <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+      <!-- Main Chatbot Conversation Area -->
+      <main class="chatbot-main">
       <div class="chat-scroll-container" id="chat-stream">
         
         <!-- Welcome / Initial Hero State -->
@@ -123,9 +229,10 @@
           </div>
         </div>
       </div>
-    </main>
+      </main>
+    </div> <!-- /shell-body -->
 
-  </div>
+  </div> <!-- /app-shell -->
 
   <!-- Chat History Slide-Over Panel -->
   <div class="drawer-overlay" id="history-overlay" onclick="toggleHistoryDrawer()"></div>
@@ -159,6 +266,9 @@
         <span>My Memories</span>
       </div>
       <div style="display: flex; gap: 6px; align-items: center;">
+        <a href="memories.html" class="btn btn-ghost btn-xs" title="Open Full Memory Center">
+          <span>Open Center ➔</span>
+        </a>
         <button class="btn btn-ghost btn-xs" id="btn-export-okf" onclick="exportOKFBundle()" title="Export OKF Memory Bundle">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
           <span>Export Bundle</span>
@@ -442,6 +552,7 @@
     <span id="toast-message">Action executed</span>
   </div>
 
+  <script src="shell.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

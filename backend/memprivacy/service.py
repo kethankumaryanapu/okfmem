@@ -219,9 +219,26 @@ def retrieve_relevant_memories(user_text: str, memories_list: list, top_k: int =
 
         # Primary Signal: Keyword relevance (title matches +3, fact matches +2, category matches +1)
         keyword_score = 0
+        matched_terms = []
+        matched_fields_set = set()
         for term in query_terms:
             if term in text_block:
-                keyword_score += 3 if term in title else (2 if term in fact else 1)
+                if term not in matched_terms:
+                    matched_terms.append(term)
+                if term in title:
+                    keyword_score += 3
+                    matched_fields_set.add("title")
+                elif term in fact:
+                    keyword_score += 2
+                    matched_fields_set.add("fact")
+                else:
+                    keyword_score += 1
+                    matched_fields_set.add("category")
+
+                if term in fact:
+                    matched_fields_set.add("fact")
+                if term in category:
+                    matched_fields_set.add("category")
 
         # Secondary Adaptive Signal: Importance weight (High: +0.5, Medium: +0.25, Low: +0.1)
         importance_str = str(mem.get("importance", "Medium")).lower()
@@ -240,13 +257,80 @@ def retrieve_relevant_memories(user_text: str, memories_list: list, top_k: int =
         mention_bonus = min(max(mention_count - 1, 0) * 0.1, 0.3)
 
         total_score = keyword_score + importance_bonus + mention_bonus
-        scored_memories.append((total_score, mem))
+
+        matched_fields = [f for f in ["title", "fact", "category"] if f in matched_fields_set]
+
+        # Construct concise, truthful human-readable explanation
+        reason_parts = []
+        if matched_terms:
+            if len(matched_terms) <= 3:
+                terms_display = ", ".join(f"'{t}'" for t in matched_terms)
+            else:
+                terms_display = ", ".join(f"'{t}'" for t in matched_terms[:3]) + f" (+{len(matched_terms)-3} more)"
+
+            if not matched_fields:
+                fields_display = "content"
+            elif len(matched_fields) == 1:
+                fields_display = matched_fields[0]
+            elif len(matched_fields) == 2:
+                fields_display = f"{matched_fields[0]} and {matched_fields[1]}"
+            else:
+                fields_display = f"{', '.join(matched_fields[:-1])} and {matched_fields[-1]}"
+
+            reason_parts.append(f"Matched {terms_display} in the {fields_display}.")
+        else:
+            reason_parts.append("Relevant keyword match.")
+
+        boosters = []
+        if importance_bonus >= 0.5:
+            boosters.append("High importance")
+        elif importance_bonus >= 0.25:
+            boosters.append("Medium importance")
+
+        if mention_bonus > 0:
+            boosters.append("previous mentions")
+
+        if boosters:
+            booster_str = " and ".join(boosters)
+            reason_parts.append(f"{booster_str.capitalize()} also increased its ranking.")
+
+        reason = " ".join(reason_parts)
+
+        meta = {
+            "keyword_score": keyword_score,
+            "importance_bonus": importance_bonus,
+            "mention_bonus": mention_bonus,
+            "matched_terms": matched_terms,
+            "matched_fields": matched_fields,
+            "reason": reason
+        }
+
+        scored_memories.append((total_score, mem, meta))
 
     scored_memories.sort(key=lambda x: x[0], reverse=True)
 
     # Filter positive keyword matches first (require keyword score >= 1.0)
-    positive_matches = [mem for score, mem in scored_memories if score >= 1.0]
-    return positive_matches[:top_k]
+    positive_items = [item for item in scored_memories if item[0] >= 1.0][:top_k]
+
+    positive_matches = []
+    for rank_idx, (score, mem, meta) in enumerate(positive_items):
+        # PART 3: Shallow copy of mem to protect persistent memory object
+        mem_copy = dict(mem)
+        mem_copy["retrieval_explanation"] = {
+            "score": round(score, 2),
+            "rank": rank_idx + 1,
+            "matched_terms": meta["matched_terms"],
+            "matched_fields": meta["matched_fields"],
+            "score_breakdown": {
+                "keyword": round(float(meta["keyword_score"]), 2),
+                "importance": round(float(meta["importance_bonus"]), 2),
+                "mention": round(float(meta["mention_bonus"]), 2)
+            },
+            "reason": meta["reason"]
+        }
+        positive_matches.append(mem_copy)
+
+    return positive_matches
 
 def format_memories_for_context(memories_list: list, store: PrivacyStore, mask_levels: list, user_text: str = "") -> tuple:
     """

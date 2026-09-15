@@ -1,331 +1,554 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OKFMem — Memories</title>
+  <title>OKFMem — Memory Center</title>
+  <meta name="description" content="Understand, manage, and control what OKFMem remembers about you.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg-base: #0B0F17;
-      --bg-surface: #131A27;
-      --bg-glass: rgba(19, 26, 39, 0.75);
-      --bg-hover: #1E283A;
-      --bg-inset: #090D14;
-      
-      --border-subtle: rgba(255, 255, 255, 0.08);
-      --border-medium: rgba(255, 255, 255, 0.16);
-      --border-strong: rgba(255, 255, 255, 0.28);
-
-      --text-main: #F1F5F9;
-      --text-muted: #94A3B8;
-      --text-dim: #64748B;
-
-      --accent: #D4954A;
-      --accent-2: #E8A85C;
-      --accent-bg: rgba(212, 149, 74, 0.12);
-      --accent-border: rgba(212, 149, 74, 0.3);
-
-      --teal: #4ECDC4;
-      --teal-bg: rgba(78, 205, 196, 0.12);
-      --teal-border: rgba(78, 205, 196, 0.3);
-
-      --blue: #4A90E2;
-      --blue-bg: rgba(74, 144, 226, 0.12);
-      --blue-border: rgba(74, 144, 226, 0.3);
-
-      --red: #C83B3B;
-      --red-bg: rgba(200, 59, 59, 0.12);
-      --red-border: rgba(200, 59, 59, 0.3);
-
-      --font-serif: 'Fraunces', Georgia, serif;
-      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      --font-mono: 'JetBrains Mono', monospace;
-
-      --radius-sm: 8px;
-      --radius-md: 14px;
-      --radius-lg: 20px;
-      --shadow-card: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 0 1px inset rgba(255, 255, 255, 0.1);
-    }
-
-    html[data-theme="light"] {
-      --bg-base: #F8FAFC;
-      --bg-surface: #FFFFFF;
-      --bg-glass: rgba(255, 255, 255, 0.85);
-      --bg-hover: #F1F5F9;
-      --bg-inset: #F1F5F9;
-
-      --border-subtle: rgba(0, 0, 0, 0.08);
-      --border-medium: rgba(0, 0, 0, 0.16);
-      --border-strong: rgba(0, 0, 0, 0.28);
-
-      --text-main: #0F172A;
-      --text-muted: #475569;
-      --text-dim: #94A3B8;
-
-      --accent: #B47326;
-      --accent-2: #925A1A;
-      --accent-bg: rgba(180, 115, 38, 0.1);
-    }
-
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background-color: var(--bg-base); color: var(--text-main); font-family: var(--font-sans); display: flex; height: 100vh; overflow: hidden; }
-
-    .app-layout { display: flex; width: 100vw; height: 100vh; overflow: hidden; }
-
-    /* Sidebar */
-    .sidebar { width: 260px; background: var(--bg-surface); border-right: 1px solid var(--border-subtle); display: flex; flex-direction: column; justify-content: space-between; padding: 20px 16px; flex-shrink: 0; }
-    .brand-block { display: flex; align-items: center; gap: 12px; padding: 8px 12px 20px 12px; border-bottom: 1px solid var(--border-subtle); }
-    .brand-icon { width: 34px; height: 34px; background: linear-gradient(135deg, var(--accent), var(--teal)); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #000; font-weight: 800; font-family: var(--font-serif); }
-    .brand-title { font-family: var(--font-serif); font-size: 19px; font-weight: 700; color: var(--text-main); }
-    .nav-section { margin-top: 18px; }
-    .nav-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); padding: 6px 12px; font-weight: 600; }
-    .nav-list { list-style: none; margin-top: 4px; }
-    .nav-item a { display: flex; align-items: center; gap: 12px; padding: 10px 12px; color: var(--text-muted); text-decoration: none; font-size: 13.5px; font-weight: 500; border-radius: var(--radius-sm); transition: all 0.15s ease; }
-    .nav-item a:hover { background: var(--bg-hover); color: var(--text-main); }
-    .nav-item.active a { background: var(--accent-bg); color: var(--accent-2); border: 1px solid var(--accent-border); font-weight: 600; }
-    .nav-item svg { stroke-width: 2px; width: 18px; height: 18px; }
-
-    .user-footer { border-top: 1px solid var(--border-subtle); padding-top: 16px; display: flex; align-items: center; justify-content: space-between; }
-    .user-card { display: flex; align-items: center; gap: 10px; }
-    .avatar { width: 34px; height: 34px; background: var(--accent); color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
-    .user-info { display: flex; flex-direction: column; }
-    .user-name { font-size: 13px; font-weight: 600; color: var(--text-main); }
-    .user-role { font-size: 11px; color: var(--text-dim); }
-
-    .theme-toggle { background: transparent; border: 1px solid var(--border-subtle); color: var(--text-muted); width: 32px; height: 32px; border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; justify-content: center; }
-    .theme-toggle:hover { color: var(--text-main); border-color: var(--border-medium); }
-
-    /* Main Area */
-    .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow-y: auto; background: var(--bg-base); position: relative; }
-    .topbar { height: 64px; padding: 0 28px; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; background: var(--bg-glass); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 5; }
-    .breadcrumbs { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-dim); }
-    .breadcrumbs span.current { color: var(--text-main); font-weight: 600; font-family: var(--font-serif); font-size: 17px; }
-    .breadcrumbs svg { width: 14px; height: 14px; }
-    .topbar-actions { display: flex; align-items: center; gap: 12px; }
-
-    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s ease; }
-    .btn-primary { background: var(--accent); color: #000; }
-    .btn-primary:hover { background: var(--accent-2); }
-    .btn-secondary { background: var(--bg-surface); color: var(--text-main); border: 1px solid var(--border-medium); }
-    .btn-secondary:hover { background: var(--bg-hover); }
-
-    .content-container { padding: 28px; max-width: 1400px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 20px; }
-
-    /* Filter & Controls Bar */
-    .controls-card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-    .search-box { display: flex; align-items: center; gap: 10px; background: var(--bg-inset); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 8px 14px; flex: 1; min-width: 240px; }
-    .search-box input { background: transparent; border: none; outline: none; color: var(--text-main); font-family: var(--font-sans); font-size: 13.5px; width: 100%; }
-    .search-box svg { color: var(--text-dim); width: 16px; height: 16px; }
-
-    .filter-group { display: flex; align-items: center; gap: 10px; }
-    .select-input { background: var(--bg-inset); border: 1px solid var(--border-subtle); color: var(--text-main); font-family: var(--font-sans); font-size: 13px; padding: 8px 12px; border-radius: var(--radius-sm); outline: none; cursor: pointer; }
-
-    .view-toggle { display: flex; background: var(--bg-inset); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 2px; }
-    .toggle-btn { background: transparent; border: none; color: var(--text-muted); padding: 6px 10px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-    .toggle-btn.active { background: var(--bg-hover); color: var(--text-main); }
-
-    /* Bulk Actions Strip */
-    .bulk-bar { background: var(--accent-bg); border: 1px solid var(--accent-border); border-radius: var(--radius-md); padding: 10px 18px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--accent-2); }
-
-    /* Grid & Cards */
-    .memory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
-    
-    .card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-card); cursor: pointer; transition: all 0.2s ease; position: relative; }
-    .card:hover { border-color: var(--border-strong); transform: translateY(-2px); }
-
-    .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
-    .card-icon { width: 36px; height: 36px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-weight: 700; }
-    .icon-amber { background: var(--accent-bg); color: var(--accent); }
-    .icon-teal { background: var(--teal-bg); color: var(--teal); }
-    .icon-blue { background: var(--blue-bg); color: var(--blue); }
-
-    .card-name { font-family: var(--font-serif); font-size: 16px; font-weight: 600; color: var(--text-main); line-height: 1.3; }
-
-    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; }
-    .badge-amber { background: var(--accent-bg); color: var(--accent-2); border: 1px solid var(--accent-border); }
-    .badge-teal { background: var(--teal-bg); color: var(--teal); border: 1px solid var(--teal-border); }
-    .badge-blue { background: var(--blue-bg); color: var(--blue); border: 1px solid var(--blue-border); }
-    .badge-red { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
-
-    .card-meta { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border-subtle); font-size: 12px; color: var(--text-muted); }
-    .meta-row { display: flex; align-items: center; justify-content: space-between; }
-
-    .importance-bars { display: flex; gap: 3px; }
-    .bar { width: 6px; height: 12px; border-radius: 2px; background: var(--border-medium); }
-    .bar.filled { background: var(--accent); }
-
-    .mono { font-family: var(--font-mono); }
-
-    /* Side Panel Drawer for Detail */
-    .detail-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 420px; background: var(--bg-surface); border-left: 1px solid var(--border-medium); box-shadow: -10px 0 40px rgba(0,0,0,0.6); z-index: 100; transform: translateX(100%); transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; }
-    .detail-drawer.open { transform: translateX(0); }
-
-    .drawer-header { padding: 20px; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; }
-    .drawer-title { font-family: var(--font-serif); font-size: 18px; font-weight: 600; color: var(--text-main); }
-    .drawer-close { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; }
-    .drawer-close:hover { color: var(--text-main); }
-
-    .drawer-body { padding: 24px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
-    .detail-field { display: flex; flex-direction: column; gap: 6px; }
-    .field-label { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.05em; }
-    .field-value { font-size: 14px; color: var(--text-main); background: var(--bg-inset); border: 1px solid var(--border-subtle); padding: 10px 14px; border-radius: var(--radius-sm); }
-  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="app-layout">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div>
-        <div class="brand-block">
-          <div class="brand-icon">O</div>
-          <div class="brand-title">OKFMem</div>
-        </div>
 
-        <div class="nav-section">
-          <div class="nav-label">Overview</div>
-          <ul class="nav-list">
-            <li class="nav-item"><a href="okfmem-dashboard.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a></li>
-            <li class="nav-item"><a href="index.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>AI Chat</a></li>
-          </ul>
-        </div>
+  <!-- Full Viewport Shell -->
+  <div class="app-shell">
 
-        <div class="nav-section">
-          <div class="nav-label">Memory</div>
-          <ul class="nav-list">
-            <li class="nav-item active"><a href="memories.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Memories</a></li>
-            <li class="nav-item"><a href="memory-timeline.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Timeline</a></li>
-            <li class="nav-item"><a href="analytics.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</a></li>
-          </ul>
-        </div>
-
-        <div class="nav-section">
-          <div class="nav-label">Data</div>
-          <ul class="nav-list">
-            <li class="nav-item"><a href="privacy.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Privacy</a></li>
-            <li class="nav-item"><a href="activity.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Activity</a></li>
-            <li class="nav-item"><a href="okf-import-export.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Import / Export</a></li>
-          </ul>
-        </div>
-
-        <div class="nav-section">
-          <div class="nav-label">Account</div>
-          <ul class="nav-list">
-            <li class="nav-item"><a href="profile.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profile</a></li>
-            <li class="nav-item"><a href="settings.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</a></li>
-          </ul>
-        </div>
+    <!-- Top Navigation Header (Exact OKFMem Brand Header) -->
+    <header class="chatbot-header">
+      <div class="brand-group">
+        <button class="btn btn-ghost btn-icon btn-sidebar-toggle" id="btn-sidebar-toggle" onclick="toggleSidebar()" title="Toggle Navigation Menu">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+        <a href="index.html" class="brand-link" style="display: flex; align-items: center; text-decoration: none;">
+          <img src="logo.png" alt="OKFMem Logo" class="brand-logo" width="140" height="38">
+        </a>
+        <div class="header-divider"></div>
+        <a href="index.html" class="btn btn-ghost" id="btn-new-chat">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <span>Chat</span>
+        </a>
       </div>
 
-      <div class="user-footer">
-        <div class="user-card">
-          <div class="avatar">KY</div>
-          <div class="user-info">
-            <span class="user-name">Kethan Kumar</span>
-            <span class="user-role">Pro Account</span>
+      <div class="header-actions">
+        <!-- Privacy Shield Indicator -->
+        <a href="privacy.html" class="privacy-indicator" style="text-decoration: none;" title="MemPrivacy Active • Data Shielding Enabled">
+          <span class="privacy-indicator-dot"></span>
+          <span>Privacy Protected</span>
+        </a>
+
+        <!-- Memory Center Active Badge -->
+        <a href="memories.html" class="memory-access-badge active" id="btn-memory-center-badge" title="Memory Center Active">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+          <span>Memory Center</span>
+          <span class="memory-badge-counter" id="top-memory-count">9</span>
+        </a>
+
+        <!-- Theme Toggle -->
+        <button class="btn btn-ghost btn-icon" id="btn-theme-toggle" onclick="toggleTheme()" title="Toggle Dark/Light Theme">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+        </button>
+
+        <!-- Settings Link -->
+        <a href="settings.html" class="btn btn-ghost btn-icon" title="Settings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </a>
+
+        <div class="header-divider"></div>
+
+        <!-- User Profile Avatar -->
+        <a href="profile.html" class="user-avatar" title="Kethan Kumar • Admin" style="text-decoration: none;">
+          KY
+        </a>
+      </div>
+    </header>
+
+    <!-- Memory Center Application Layout -->
+    <div class="shell-body mc-layout">
+
+      <!-- Left Navigation Sidebar -->
+      <aside class="okf-sidebar mc-sidebar" id="okf-sidebar">
+        <div>
+          <!-- MAIN Section -->
+          <div class="okf-nav-section mc-nav-section">
+            <div class="okf-nav-label mc-nav-label">MAIN</div>
+            <ul class="okf-nav-list mc-nav-list">
+              <li class="okf-nav-item mc-nav-item">
+                <a href="index.html" data-tooltip="AI Chat">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  <span class="nav-label-text">Chat</span>
+                </a>
+              </li>
+              <li class="okf-nav-item mc-nav-item active">
+                <a href="memories.html" data-tooltip="Memory Center">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                  <span class="nav-label-text">Memory Center</span>
+                </a>
+              </li>
+              <li class="okf-nav-item mc-nav-item">
+                <a href="privacy.html" data-tooltip="MemPrivacy">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  <span class="nav-label-text">Privacy</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- DATA & KNOWLEDGE Section -->
+          <div class="okf-nav-section mc-nav-section">
+            <div class="okf-nav-label mc-nav-label">DATA & KNOWLEDGE</div>
+            <ul class="okf-nav-list mc-nav-list">
+              <li class="okf-nav-item mc-nav-item">
+                <a href="okf-import-export.html" data-tooltip="OKF / Portability">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  <span class="nav-label-text">OKF / Portability</span>
+                </a>
+              </li>
+              <li class="okf-nav-item mc-nav-item">
+                <a href="activity.html" data-tooltip="Activity Log">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                  <span class="nav-label-text">Activity</span>
+                </a>
+              </li>
+              <li class="okf-nav-item mc-nav-item">
+                <a href="analytics.html" data-tooltip="Analytics">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                  <span class="nav-label-text">Analytics</span>
+                </a>
+              </li>
+              <li class="okf-nav-item mc-nav-item">
+                <a href="memory-timeline.html" data-tooltip="Timeline">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  <span class="nav-label-text">Timeline</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- SYSTEM Section -->
+          <div class="okf-nav-section mc-nav-section">
+            <div class="okf-nav-label mc-nav-label">SYSTEM</div>
+            <ul class="okf-nav-list mc-nav-list">
+              <li class="okf-nav-item mc-nav-item">
+                <a href="settings.html" data-tooltip="System Settings">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                  <span class="nav-label-text">Settings</span>
+                </a>
+              </li>
+              <li class="okf-nav-item mc-nav-item">
+                <a href="profile.html" data-tooltip="User Profile">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  <span class="nav-label-text">Profile</span>
+                </a>
+              </li>
+            </ul>
           </div>
         </div>
-        <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+
+        <div class="mc-sidebar-footer">
+          <div class="mc-system-status">
+            <div class="mc-status-row">
+              <span style="font-weight: 600; color: var(--text-primary);">OKF v0.2 Engine</span>
+              <span class="privacy-indicator-dot" style="margin: 0;"></span>
+            </div>
+            <div class="okf-sidebar-footer-text">Sync: backend/okf/user-memory</div>
+            <div class="mc-status-row" style="margin-top: 4px;">
+              <span>MemPrivacy Tier:</span>
+              <span style="color: var(--status-success); font-weight: 600;">PL2 Shield</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Mobile overlay -->
+      <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+      <!-- Main Scrollable Workspace -->
+      <main class="mc-main">
+        <div class="mc-container">
+
+          <!-- Hero Section -->
+          <div class="mc-hero">
+            <div class="mc-hero-title-group">
+              <div class="okf-breadcrumb">
+                <a href="index.html">OKFMem</a>
+                <span class="crumb-sep">/</span>
+                <span class="crumb-current">Memory Center</span>
+              </div>
+              <h1>Memory Center</h1>
+              <p>Understand, manage, and control what OKFMem remembers about you.</p>
+            </div>
+            <div class="mc-hero-actions">
+              <button class="btn btn-primary" onclick="openAddModal()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>Add Memory</span>
+              </button>
+              <a href="http://localhost:5000/api/okf/export" class="btn btn-secondary" title="Export entire Open Knowledge Format memory bundle as zip">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>Export OKF</span>
+              </a>
+              <a href="index.html" class="btn btn-secondary" title="Switch to conversational chatbot interface">
+                <span>Open Chat ➔</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Section A: Memory Summary Cards (Real Backend Data) -->
+          <div class="mc-stats-grid" id="stats-container">
+            <div class="mc-stat-card active" id="stat-card-all" onclick="applyQuickFilter('all')" title="Show all stored memory records">
+              <div class="mc-stat-label">TOTAL MEMORIES</div>
+              <div class="mc-stat-value" id="stat-total">--</div>
+              <div class="mc-stat-subtext">Live Synced</div>
+            </div>
+            <div class="mc-stat-card" id="stat-card-skill" onclick="applyQuickFilter('category', 'Skill')" title="Filter by Skills">
+              <div class="mc-stat-label">SKILLS</div>
+              <div class="mc-stat-value" id="stat-skill" style="color: #00D2FF;">--</div>
+              <div class="mc-stat-subtext">Technical Abilities</div>
+            </div>
+            <div class="mc-stat-card" id="stat-card-preference" onclick="applyQuickFilter('category', 'Preference')" title="Filter by Preferences">
+              <div class="mc-stat-label">PREFERENCES</div>
+              <div class="mc-stat-value" id="stat-preference" style="color: #4ECDC4;">--</div>
+              <div class="mc-stat-subtext">Workflows &amp; Styles</div>
+            </div>
+            <div class="mc-stat-card" id="stat-card-project" onclick="applyQuickFilter('category', 'Project')" title="Filter by Projects">
+              <div class="mc-stat-label">PROJECTS</div>
+              <div class="mc-stat-value" id="stat-project" style="color: #4A90E2;">--</div>
+              <div class="mc-stat-subtext">Active Initiatives</div>
+            </div>
+            <div class="mc-stat-card" id="stat-card-fact" onclick="applyQuickFilter('category', 'Fact')" title="Filter by Facts">
+              <div class="mc-stat-label">FACTS</div>
+              <div class="mc-stat-value" id="stat-fact" style="color: #A78BFA;">--</div>
+              <div class="mc-stat-subtext">Persona &amp; Context</div>
+            </div>
+            <div class="mc-stat-card" id="stat-card-general" onclick="applyQuickFilter('category', 'General')" title="Filter by General">
+              <div class="mc-stat-label">GENERAL</div>
+              <div class="mc-stat-value" id="stat-general" style="color: #94A3B8;">--</div>
+              <div class="mc-stat-subtext">General Knowledge</div>
+            </div>
+            <div class="mc-stat-card" id="stat-card-protected" onclick="applyQuickFilter('privacy', 'Protected')" title="Filter by Protected Memories">
+              <div class="mc-stat-label">PROTECTED</div>
+              <div class="mc-stat-value" id="stat-protected" style="color: var(--status-success);">--</div>
+              <div class="mc-stat-subtext">MemPrivacy PL2</div>
+            </div>
+            <div class="mc-stat-card" id="stat-card-high" onclick="applyQuickFilter('importance', 'High')" title="Filter by High Importance Memories">
+              <div class="mc-stat-label">HIGH IMPORTANCE</div>
+              <div class="mc-stat-value" id="stat-high" style="color: var(--red-accent);">--</div>
+              <div class="mc-stat-subtext">Priority Knowledge</div>
+            </div>
+            <div class="mc-stat-card" id="stat-card-stale" onclick="applyQuickFilter('stale')" title="Memories not mentioned or seen in over 14 days">
+              <div class="mc-stat-label">POTENTIALLY STALE</div>
+              <div class="mc-stat-value" id="stat-stale" style="color: var(--amber-primary);">--</div>
+              <div class="mc-stat-subtext">&gt;14 Days Inactive</div>
+            </div>
+          </div>
+
+          <!-- Section B: Search + Filter Control Bar -->
+          <div class="mc-controls-card">
+            <div class="mc-search-box">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="search-input" placeholder="Search memories... (e.g., React, Python, project, etc.)" oninput="onSearchInput()">
+              <button class="mc-search-clear" id="search-clear-btn" onclick="clearSearch()" title="Clear search">✕</button>
+            </div>
+
+            <div class="mc-filter-group">
+              <select class="mc-select" id="filter-category" onchange="onFilterChange()" title="Filter by Category">
+                <option value="All">Category: All</option>
+                <option value="Skill">Skill</option>
+                <option value="Preference">Preference</option>
+                <option value="Project">Project</option>
+                <option value="Fact">Fact</option>
+                <option value="General">General</option>
+              </select>
+
+              <select class="mc-select" id="filter-importance" onchange="onFilterChange()" title="Filter by Importance">
+                <option value="All">Importance: All</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+              </select>
+
+              <select class="mc-select" id="filter-privacy" onchange="onFilterChange()" title="Filter by Privacy Mode">
+                <option value="All">Privacy: All</option>
+                <option value="Protected">Protected</option>
+                <option value="Regular">Regular</option>
+              </select>
+
+              <select class="mc-select" id="sort-select" onchange="onFilterChange()" title="Sort Memories">
+                <option value="recent-updated">Sort: Recently Updated</option>
+                <option value="recent-seen">Sort: Recently Seen</option>
+                <option value="importance">Sort: Importance</option>
+                <option value="mentions">Sort: Mention Count</option>
+                <option value="newest">Sort: Newest First</option>
+                <option value="oldest">Sort: Oldest First</option>
+              </select>
+
+              <button class="btn btn-secondary btn-sm" onclick="resetAllFilters()" title="Reset all filters">Clear Filters</button>
+
+              <div class="mc-view-toggle">
+                <button class="mc-toggle-btn active" id="btn-view-grid" onclick="setViewMode('grid')" title="Grid View">
+                  <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+                </button>
+                <button class="mc-toggle-btn" id="btn-view-table" onclick="setViewMode('table')" title="Table View">
+                  <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section Header: Memories (N) -->
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="font-size: 17px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em;">
+              <span id="memories-header-title">Memories (0)</span>
+            </div>
+            <div class="mc-status-strip" id="filter-status-strip" style="display: none;">
+              <span id="active-filter-badge-container"></span>
+            </div>
+          </div>
+
+          <!-- Section C: Memory Records Display Container -->
+          <div id="memories-display-area">
+            <!-- Dynamically rendered: Grid, Table, or Empty State -->
+          </div>
+
+        </div>
+      </main>
+    </div>
+
+    <!-- Section D: Memory Details Inspector (Slide-over Drawer) -->
+    <div class="drawer-overlay" id="drawerOverlay" onclick="closeDetail()"></div>
+    <aside class="side-drawer right-drawer" id="detailDrawer" style="width: 500px; max-width: 95vw;">
+      <div class="drawer-header">
+        <div class="drawer-title" style="display: flex; align-items: center; gap: 8px;">
+          <span class="mc-id-badge" id="detailId">M000</span>
+          <span id="detailDrawerTitle">Memory Details</span>
+        </div>
+        <button class="btn btn-icon" onclick="closeDetail()" style="padding: 4px;" title="Close Details">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
+
+      <div class="drawer-body" style="gap: 16px;">
+        <div class="mc-detail-card">
+          <div class="mc-detail-label">Title / Concept</div>
+          <div class="mc-detail-value" id="detailTitle" style="font-weight: 700; font-size: 16px;">---</div>
+        </div>
+
+        <div class="mc-detail-card">
+          <div class="mc-detail-label">Fact Statement</div>
+          <div class="mc-detail-value" id="detailFact">---</div>
+        </div>
+
+        <div class="mc-detail-grid-2">
+          <div class="mc-detail-card">
+            <div class="mc-detail-label">Category</div>
+            <div id="detailCategoryBadge"></div>
+          </div>
+          <div class="mc-detail-card">
+            <div class="mc-detail-label">Importance</div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span id="detailImportanceText" style="font-weight: 600;">High</span>
+              <div class="mc-importance-meter" id="detailImportanceMeter"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mc-detail-grid-2">
+          <div class="mc-detail-card">
+            <div class="mc-detail-label">MemPrivacy Boundary</div>
+            <div id="detailPrivacyBadge"></div>
+          </div>
+          <div class="mc-detail-card">
+            <div class="mc-detail-label">Confidence Score</div>
+            <div class="mc-detail-value mono" id="detailConfidence" style="color: var(--status-success); font-weight: 700;">95%</div>
+          </div>
+        </div>
+
+        <div class="mc-detail-card">
+          <div class="mc-detail-label">
+            <span>Adaptive Usage &amp; Mentions</span>
+            <span class="mc-badge mc-badge-general" id="detailMentionsBadge">1 mention</span>
+          </div>
+          <div style="font-size: 12px; color: var(--text-muted); line-height: 1.4; margin-top: 4px;">
+            Adaptive promotion rule: <strong>2+ mentions</strong> promote Low → Medium. <strong>3+ mentions</strong> promote Medium → High importance.
+          </div>
+        </div>
+
+        <div class="mc-detail-grid-2">
+          <div class="mc-detail-card">
+            <div class="mc-detail-label">Last Seen / Used</div>
+            <div class="mc-detail-value mono" id="detailLastSeen">---</div>
+          </div>
+          <div class="mc-detail-card">
+            <div class="mc-detail-label">Created Date</div>
+            <div class="mc-detail-value mono" id="detailCreated">---</div>
+          </div>
+        </div>
+
+        <div class="mc-detail-card">
+          <div class="mc-detail-label">Provenance Source</div>
+          <div class="mc-detail-value" id="detailSource">Conversation</div>
+        </div>
+
+        <!-- Live OKF Spec Preview -->
+        <div class="mc-detail-card">
+          <div class="mc-detail-label">
+            <span>Open Knowledge Format (OKF) Spec</span>
+            <button class="btn btn-ghost btn-xs" onclick="copyOKFSpec()" title="Copy Markdown to Clipboard">Copy OKF</button>
+          </div>
+          <div class="okf-json-box" style="margin-top: 6px;">
+            <pre><code id="detailOkfSpec">Loading OKF document...</code></pre>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: auto; padding-top: 10px;">
+          <button class="btn btn-primary btn-sm" style="flex: 1;" onclick="openEditModalForActive()">
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            <span>Edit</span>
+          </button>
+          <button class="btn btn-ghost btn-sm btn-danger-ghost" onclick="confirmDeleteActive()">
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            <span>Delete</span>
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="closeDetail()">Close</button>
+        </div>
+      </div>
     </aside>
 
-    <!-- Main Content -->
-    <main class="main-wrapper">
-      <header class="topbar">
-        <div class="breadcrumbs">
-          <span>Memory</span>
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-          <span class="current">Memories Index</span>
+    <!-- Section E: Edit Memory Modal -->
+    <div class="modal-backdrop" id="editModal" onclick="closeEditModal(event)">
+      <div class="modal-card" onclick="event.stopPropagation()">
+        <div class="modal-card-header">
+          <div class="modal-card-title" id="editModalTitle">Edit Memory Record</div>
+          <button class="btn btn-icon" onclick="closeEditModal()" style="padding: 4px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
         </div>
-        <div class="topbar-actions">
-          <a href="index.html" class="btn btn-primary" style="text-decoration: none;"><svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Open Live Memories App</a>
-        </div>
-      </header>
-
-      <div class="content-container">
-        <!-- Prototype Preview Banner -->
-        <div style="background: var(--bg-surface); border: 1px solid var(--border-medium); border-radius: var(--radius-md, 12px); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--text-muted); gap: 12px;">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="background: var(--accent-bg); border: 1px solid var(--accent-border); color: var(--accent-2); padding: 2px 8px; border-radius: 6px; font-weight: 600; font-size: 11px;">Prototype Preview</span>
-            <span>Static index mockup view. Live memories, extraction, and persistent deletion run interactively in index.html.</span>
-          </div>
-          <a href="index.html" class="btn btn-primary" style="padding: 6px 14px; font-size: 12.5px; text-decoration: none; border-radius: 8px;">Open Live Memories ➔</a>
-        </div>
-        <!-- Controls & Search -->
-        <div class="controls-card">
-          <div class="search-box">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="search-input" placeholder="Search memory records by keyword or fact..." oninput="renderPageMemories()">
+        <div class="modal-card-body">
+          <input type="hidden" id="editMemoryId">
+          
+          <div class="form-group" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px;">
+            <label class="detail-label" for="editTitle">Memory Title / Concept</label>
+            <input type="text" class="mc-select" style="width: 100%; padding: 9px 12px;" id="editTitle" required placeholder="e.g. Python Programming">
           </div>
 
-          <div class="filter-group">
-            <select class="select-input" id="category-select" onchange="renderPageMemories()">
-              <option value="All">Category: All</option>
-              <option value="Skill">Skill</option>
-              <option value="Project">Project Context</option>
-              <option value="Preference">Preferences</option>
-              <option value="Fact">Fact / General</option>
+          <div class="form-group" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px;">
+            <label class="detail-label" for="editFact">Fact Statement</label>
+            <textarea class="mc-select" style="width: 100%; min-height: 90px; padding: 10px 12px; resize: vertical;" id="editFact" required placeholder="Describe what OKFMem remembers..."></textarea>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+            <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+              <label class="detail-label" for="editCategory">Category</label>
+              <select class="mc-select" style="width: 100%;" id="editCategory">
+                <option value="Skill">Skill</option>
+                <option value="Preference">Preference</option>
+                <option value="Project">Project</option>
+                <option value="Fact">Fact</option>
+                <option value="General">General</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+              <label class="detail-label" for="editImportance">Importance</label>
+              <select class="mc-select" style="width: 100%;" id="editImportance">
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+            <label class="detail-label" for="editPrivacy">Privacy Classification Tier</label>
+            <select class="mc-select" style="width: 100%;" id="editPrivacy">
+              <option value="Protected">Protected (MemPrivacy Shielded)</option>
+              <option value="Safe">Safe (Public / General)</option>
             </select>
-            <span id="live-memory-count-badge" class="badge badge-teal" style="font-size: 13px; padding: 6px 12px; font-weight: 600;">Total Memories: 0</span>
           </div>
         </div>
-
-        <!-- Memories Grid -->
-        <div class="memory-grid" id="memories-grid-container">
-          <!-- Dynamic cards rendered via JS -->
+        <div class="modal-card-footer">
+          <button class="btn btn-ghost btn-sm" onclick="closeEditModal()">Cancel</button>
+          <button class="btn btn-primary btn-sm" onclick="saveMemoryEdit()">Save Changes</button>
         </div>
       </div>
-    </main>
+    </div>
 
-    <!-- Detail Side Panel -->
-    <aside class="detail-drawer" id="detailDrawer">
-      <div class="drawer-header">
-        <div class="drawer-title">Memory Detail</div>
-        <button class="drawer-close" onclick="closeDetail()"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <!-- Section F: Add Memory Modal -->
+    <div class="modal-backdrop" id="addModal" onclick="closeAddModal(event)">
+      <div class="modal-card" onclick="event.stopPropagation()">
+        <div class="modal-card-header">
+          <div class="modal-card-title">Add New Memory</div>
+          <button class="btn btn-icon" onclick="closeAddModal()" style="padding: 4px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+        <div class="modal-card-body">
+          <div class="form-group" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px;">
+            <label class="detail-label" for="addTitle">Memory Title / Concept</label>
+            <input type="text" class="mc-select" style="width: 100%; padding: 9px 12px;" id="addTitle" placeholder="e.g. Distributed Systems Architecture">
+          </div>
+
+          <div class="form-group" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px;">
+            <label class="detail-label" for="addFact">Fact Statement</label>
+            <textarea class="mc-select" style="width: 100%; min-height: 90px; padding: 10px 12px; resize: vertical;" id="addFact" placeholder="User prefers distributed event-driven systems using Kafka."></textarea>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+            <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+              <label class="detail-label" for="addCategory">Category</label>
+              <select class="mc-select" style="width: 100%;" id="addCategory">
+                <option value="Skill">Skill</option>
+                <option value="Preference">Preference</option>
+                <option value="Project">Project</option>
+                <option value="Fact">Fact</option>
+                <option value="General">General</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+              <label class="detail-label" for="addImportance">Importance</label>
+              <select class="mc-select" style="width: 100%;" id="addImportance">
+                <option value="High">High</option>
+                <option value="Medium" selected>Medium</option>
+                <option value="Low">Low</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+            <label class="detail-label" for="addPrivacy">Privacy Classification Tier</label>
+            <select class="mc-select" style="width: 100%;" id="addPrivacy">
+              <option value="Protected" selected>Protected (MemPrivacy Shielded)</option>
+              <option value="Safe">Safe (Public / General)</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-card-footer">
+          <button class="btn btn-ghost btn-sm" onclick="closeAddModal()">Cancel</button>
+          <button class="btn btn-primary btn-sm" onclick="submitNewMemory()">Create Memory</button>
+        </div>
       </div>
+    </div>
 
-      <div class="drawer-body">
-        <div class="detail-field">
-          <div class="field-label">Memory Title / Fact</div>
-          <div class="field-value" id="detailTitle">---</div>
-        </div>
+    <!-- Floating Toast Feedback -->
+    <div class="toast" id="toast">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--red-primary)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <span id="toast-message">Action successful</span>
+    </div>
 
-        <div class="detail-field">
-          <div class="field-label">Category</div>
-          <div class="field-value" id="detailCategory">Skill</div>
-        </div>
-
-        <div class="detail-field">
-          <div class="field-label">Importance</div>
-          <div class="field-value" id="detailImportance">High</div>
-        </div>
-
-        <div class="detail-field">
-          <div class="field-label">Confidence Score</div>
-          <div class="field-value mono" id="detailConfidence" style="color: var(--teal); font-weight: 600;">95%</div>
-        </div>
-
-        <div class="detail-field">
-          <div class="field-label">Privacy Classification Tier</div>
-          <div class="field-value" id="detailPrivacy">PL2 Protected</div>
-        </div>
-
-        <div style="display: flex; gap: 10px; margin-top: auto;">
-          <button class="btn btn-primary" style="flex: 1;" onclick="closeDetail()">Close</button>
-          <button class="btn btn-secondary" style="color: var(--red);" onclick="deleteActiveDetailMemory()">Delete</button>
-        </div>
-      </div>
-    </aside>
   </div>
 
   <script>
-    let pageMemories = [];
+    const API_BASE = 'http://localhost:5000/api';
+    let allMemories = [];
+    let currentViewMode = localStorage.getItem('okfmem_memory_view') || 'grid';
     let activeDetailId = null;
+    let quickFilterType = 'all';
+    let quickFilterVal = null;
+    let toastTimeout = null;
 
+    /* Theme Management */
     function toggleTheme() {
       const html = document.documentElement;
       const current = html.getAttribute('data-theme') || 'dark';
@@ -338,113 +561,681 @@
       document.documentElement.setAttribute('data-theme', saved);
     })();
 
-    async function loadPageMemories() {
+    /* Toast Notification */
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const toastMessage = document.getElementById('toast-message');
+      if (!toast || !toastMessage) return;
+      toastMessage.textContent = message;
+      toast.classList.add('show');
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => toast.classList.remove('show'), 2600);
+    }
+
+    /* Stale Detection (>14 days inactive based on real timestamp) */
+    function isMemoryStale(mem) {
+      const dateStr = mem.last_seen || mem.created;
+      if (!dateStr) return false;
+      const parsed = Date.parse(dateStr);
+      if (isNaN(parsed)) return false;
+      const diffDays = (Date.now() - parsed) / (1000 * 60 * 60 * 24);
+      return diffDays > 14;
+    }
+
+    /* Load Memories from Backend */
+    async function loadMemories() {
       try {
-        const res = await fetch('http://localhost:5000/api/memories');
+        const res = await fetch(`${API_BASE}/memories`);
+        if (!res.ok) throw new Error(`HTTP error ${res.status}`);
         const data = await res.json();
         if (data && data.success && Array.isArray(data.memories)) {
-          pageMemories = data.memories;
-          renderPageMemories();
+          allMemories = data.memories;
+        } else {
+          allMemories = [];
         }
+        updateOverviewStatistics();
+        renderMemories();
       } catch (err) {
         console.error('Failed to load memories:', err);
+        const container = document.getElementById('memories-display-area');
+        if (container) {
+          container.innerHTML = `
+            <div class="empty-state" style="margin: 40px auto; text-align: center; padding: 48px 24px; background: var(--surface-elevated); border: 1px dashed var(--border-medium); border-radius: var(--radius-md); max-width: 540px;">
+              <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--red-subtle-bg); color: var(--red-accent); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              </div>
+              <h3 style="color: var(--text-primary); margin-bottom: 6px;">Cannot Connect to OKFMem Service</h3>
+              <p style="color: var(--text-secondary); font-size: 13.5px; margin-bottom: 16px;">Ensure the backend service is running at <code>http://localhost:5000</code>.</p>
+              <button class="btn btn-secondary btn-sm" onclick="loadMemories()">Retry Connection</button>
+            </div>
+          `;
+        }
       }
     }
 
-    function renderPageMemories() {
-      const container = document.getElementById('memories-grid-container');
-      const countBadge = document.getElementById('live-memory-count-badge');
-      const searchInput = document.getElementById('search-input');
-      const catSelect = document.getElementById('category-select');
+    /* Update Section A Summary Statistics */
+    function updateOverviewStatistics() {
+      const total = allMemories.length;
+      const skillCount = allMemories.filter(m => (m.category || '').toLowerCase() === 'skill').length;
+      const prefCount = allMemories.filter(m => (m.category || '').toLowerCase() === 'preference').length;
+      const projCount = allMemories.filter(m => (m.category || '').toLowerCase() === 'project').length;
+      const factCount = allMemories.filter(m => (m.category || '').toLowerCase() === 'fact').length;
+      const generalCount = allMemories.filter(m => (m.category || '').toLowerCase() === 'general').length;
+      const protectedCount = allMemories.filter(m => (m.privacy || '').toLowerCase() === 'protected').length;
+      const highCount = allMemories.filter(m => (m.importance || '').toLowerCase() === 'high').length;
+      const staleCount = allMemories.filter(m => isMemoryStale(m)).length;
 
-      if (countBadge) countBadge.textContent = `Total Memories: ${pageMemories.length}`;
-      if (!container) return;
+      document.getElementById('stat-total').textContent = total;
+      document.getElementById('top-memory-count').textContent = total;
+      document.getElementById('stat-skill').textContent = skillCount;
+      document.getElementById('stat-preference').textContent = prefCount;
+      document.getElementById('stat-project').textContent = projCount;
+      document.getElementById('stat-fact').textContent = factCount;
+      document.getElementById('stat-general').textContent = generalCount;
+      document.getElementById('stat-protected').textContent = protectedCount;
+      document.getElementById('stat-high').textContent = highCount;
+      document.getElementById('stat-stale').textContent = staleCount;
+    }
 
-      const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
-      const selectedCat = catSelect ? catSelect.value : 'All';
+    /* Quick Filter by clicking cards */
+    function applyQuickFilter(type, val = null) {
+      quickFilterType = type;
+      quickFilterVal = val;
 
-      const filtered = pageMemories.filter(m => {
-        const matchesCat = selectedCat === 'All' || (m.category || '').toLowerCase().includes(selectedCat.toLowerCase());
-        const matchesQuery = (m.title || '').toLowerCase().includes(query) ||
-                             (m.fact || '').toLowerCase().includes(query) ||
-                             (m.category || '').toLowerCase().includes(query);
-        return matchesCat && matchesQuery;
-      });
+      document.querySelectorAll('.mc-stat-card').forEach(card => card.classList.remove('active'));
 
-      if (filtered.length === 0) {
-        container.innerHTML = `<div style="grid-column: 1 / -1; padding: 40px; text-align: center; color: var(--text-muted);">No memory records found.</div>`;
-        return;
+      const catSelect = document.getElementById('filter-category');
+      const impSelect = document.getElementById('filter-importance');
+      const privSelect = document.getElementById('filter-privacy');
+
+      if (type === 'all') {
+        document.getElementById('stat-card-all')?.classList.add('active');
+        catSelect.value = 'All';
+        impSelect.value = 'All';
+        privSelect.value = 'All';
+      } else if (type === 'category') {
+        document.getElementById(`stat-card-${val.toLowerCase()}`)?.classList.add('active');
+        catSelect.value = val;
+        impSelect.value = 'All';
+        privSelect.value = 'All';
+      } else if (type === 'privacy') {
+        document.getElementById('stat-card-protected')?.classList.add('active');
+        privSelect.value = val;
+        catSelect.value = 'All';
+        impSelect.value = 'All';
+      } else if (type === 'importance') {
+        document.getElementById('stat-card-high')?.classList.add('active');
+        impSelect.value = val;
+        catSelect.value = 'All';
+        privSelect.value = 'All';
+      } else if (type === 'stale') {
+        document.getElementById('stat-card-stale')?.classList.add('active');
       }
 
-      let html = '';
-      filtered.forEach(m => {
-        const isProtected = (m.privacy || '').toLowerCase() === 'protected';
-        const badgeClass = isProtected ? 'badge-amber' : 'badge-teal';
-        const catBadgeClass = m.category === 'Skill' ? 'badge-amber' : (m.category === 'Project' ? 'badge-blue' : 'badge-teal');
+      renderMemories();
+    }
 
-        html += `
-          <div class="card" onclick="openDetailById('${m.id}')" style="cursor: pointer;">
-            <div class="card-top" style="display: flex; justify-content: space-between; align-items: center;">
-              <span class="badge ${catBadgeClass}">${escapeHtml(m.category || 'Skill')}</span>
-              <span class="badge ${badgeClass}">${m.privacy || 'Safe'}</span>
+    /* Filter & Search Input Listeners */
+    function onSearchInput() {
+      const q = document.getElementById('search-input').value.trim();
+      const clearBtn = document.getElementById('search-clear-btn');
+      if (clearBtn) clearBtn.style.display = q ? 'block' : 'none';
+      renderMemories();
+    }
+
+    function clearSearch() {
+      const input = document.getElementById('search-input');
+      if (input) input.value = '';
+      const clearBtn = document.getElementById('search-clear-btn');
+      if (clearBtn) clearBtn.style.display = 'none';
+      renderMemories();
+    }
+
+    function onFilterChange() {
+      document.querySelectorAll('.mc-stat-card').forEach(c => c.classList.remove('active'));
+      quickFilterType = 'custom';
+      renderMemories();
+    }
+
+    function resetAllFilters() {
+      document.getElementById('search-input').value = '';
+      const clearBtn = document.getElementById('search-clear-btn');
+      if (clearBtn) clearBtn.style.display = 'none';
+      document.getElementById('filter-category').value = 'All';
+      document.getElementById('filter-importance').value = 'All';
+      document.getElementById('filter-privacy').value = 'All';
+      document.getElementById('sort-select').value = 'recent-updated';
+      applyQuickFilter('all');
+    }
+
+    function setViewMode(mode) {
+      currentViewMode = mode;
+      localStorage.setItem('okfmem_memory_view', mode);
+      document.getElementById('btn-view-grid')?.classList.toggle('active', mode === 'grid');
+      document.getElementById('btn-view-table')?.classList.toggle('active', mode === 'table');
+      renderMemories();
+    }
+
+    /* Filter and Sort Logic */
+    function getFilteredAndSortedMemories() {
+      const query = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
+      const selectedCategory = document.getElementById('filter-category')?.value || 'All';
+      const selectedImportance = document.getElementById('filter-importance')?.value || 'All';
+      const selectedPrivacy = document.getElementById('filter-privacy')?.value || 'All';
+      const sortBy = document.getElementById('sort-select')?.value || 'recent-updated';
+
+      let list = allMemories.filter(m => {
+        if (quickFilterType === 'stale' && !isMemoryStale(m)) {
+          return false;
+        }
+        if (selectedCategory !== 'All' && (m.category || '').toLowerCase() !== selectedCategory.toLowerCase()) {
+          return false;
+        }
+        if (selectedImportance !== 'All' && (m.importance || '').toLowerCase() !== selectedImportance.toLowerCase()) {
+          return false;
+        }
+        if (selectedPrivacy !== 'All') {
+          const isProtected = (m.privacy || '').toLowerCase() === 'protected';
+          if (selectedPrivacy === 'Protected' && !isProtected) return false;
+          if (selectedPrivacy === 'Regular' && isProtected) return false;
+        }
+        if (query) {
+          const inTitle = (m.title || '').toLowerCase().includes(query);
+          const inFact = (m.fact || '').toLowerCase().includes(query);
+          const inId = (m.id || '').toLowerCase().includes(query);
+          const inCategory = (m.category || '').toLowerCase().includes(query);
+          if (!inTitle && !inFact && !inId && !inCategory) return false;
+        }
+        return true;
+      });
+
+      list.sort((a, b) => {
+        if (sortBy === 'recent-updated') {
+          const da = Date.parse(a.last_seen || a.created || 0) || 0;
+          const db = Date.parse(b.last_seen || b.created || 0) || 0;
+          return db - da;
+        } else if (sortBy === 'recent-seen') {
+          const da = Date.parse(a.last_seen || 0) || 0;
+          const db = Date.parse(b.last_seen || 0) || 0;
+          return db - da;
+        } else if (sortBy === 'importance') {
+          const weights = { high: 3, medium: 2, low: 1 };
+          const wa = weights[(a.importance || 'Medium').toLowerCase()] || 2;
+          const wb = weights[(b.importance || 'Medium').toLowerCase()] || 2;
+          return wb - wa;
+        } else if (sortBy === 'mentions') {
+          return (b.mention_count || 1) - (a.mention_count || 1);
+        } else if (sortBy === 'newest') {
+          const da = Date.parse(a.created || 0) || 0;
+          const db = Date.parse(b.created || 0) || 0;
+          return db - da;
+        } else if (sortBy === 'oldest') {
+          const da = Date.parse(a.created || 0) || 0;
+          const db = Date.parse(b.created || 0) || 0;
+          return da - db;
+        }
+        return 0;
+      });
+
+      return list;
+    }
+
+    /* Render Memory Display */
+    function renderMemories() {
+      const container = document.getElementById('memories-display-area');
+      const headerTitle = document.getElementById('memories-header-title');
+      const statusStrip = document.getElementById('filter-status-strip');
+      const badgeContainer = document.getElementById('active-filter-badge-container');
+
+      if (!container) return;
+
+      const filtered = getFilteredAndSortedMemories();
+      if (headerTitle) {
+        headerTitle.textContent = `Memories (${filtered.length})`;
+      }
+
+      // Check active filters
+      const query = (document.getElementById('search-input')?.value || '').trim();
+      const cat = document.getElementById('filter-category')?.value || 'All';
+      const imp = document.getElementById('filter-importance')?.value || 'All';
+      const priv = document.getElementById('filter-privacy')?.value || 'All';
+      const isFiltered = query || cat !== 'All' || imp !== 'All' || priv !== 'All' || quickFilterType === 'stale';
+
+      if (statusStrip) {
+        if (isFiltered) {
+          statusStrip.style.display = 'flex';
+          let badges = '';
+          if (query) badges += `<span class="mc-active-pill">Query: "${escapeHtml(query)}"</span> `;
+          if (cat !== 'All') badges += `<span class="mc-active-pill">Category: ${cat}</span> `;
+          if (imp !== 'All') badges += `<span class="mc-active-pill">Importance: ${imp}</span> `;
+          if (priv !== 'All') badges += `<span class="mc-active-pill">Privacy: ${priv}</span> `;
+          if (quickFilterType === 'stale') badges += `<span class="mc-active-pill">Filter: Inactive &gt;14d</span> `;
+          badgeContainer.innerHTML = badges;
+        } else {
+          statusStrip.style.display = 'none';
+        }
+      }
+
+      // Empty state: database empty
+      if (allMemories.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state" style="text-align: center; padding: 60px 24px; background: var(--surface-elevated); border: 1px dashed var(--border-medium); border-radius: var(--radius-md); max-width: 580px; margin: 40px auto;">
+            <div class="welcome-icon" style="margin: 0 auto 16px;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
             </div>
-            <div class="card-name" style="margin-top: 10px; font-weight: 600;">${escapeHtml(m.title)}</div>
-            <div style="font-size: 13px; color: var(--text-dim, #a0aec0); margin: 6px 0 12px;">${escapeHtml(m.fact)}</div>
-            <div class="card-meta">
-              <div class="meta-row">
-                <span>Confidence</span>
-                <span class="mono" style="color: var(--teal); font-weight: 600;">${m.confidence || 94}%</span>
-              </div>
-              <div class="meta-row">
-                <span>Created</span>
-                <span class="mono">${m.created || '24 Aug 2026'}</span>
-              </div>
+            <h3 style="font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">No memories yet</h3>
+            <p style="font-size: 14px; color: var(--text-secondary); max-width: 440px; margin: 0 auto 20px; line-height: 1.5;">
+              Start a conversation and OKFMem will learn information you choose to retain.
+            </p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+              <a href="index.html" class="btn btn-primary btn-sm">Start New Chat ➔</a>
+              <button class="btn btn-secondary btn-sm" onclick="openAddModal()">+ Add Memory Manually</button>
             </div>
           </div>
         `;
-      });
+        return;
+      }
 
-      container.innerHTML = html;
+      // Empty state: filtered results 0
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state" style="text-align: center; padding: 50px 24px; background: var(--surface-elevated); border: 1px dashed var(--border-medium); border-radius: var(--radius-md); max-width: 540px; margin: 30px auto;">
+            <div class="welcome-icon" style="background: var(--amber-bg); border-color: var(--amber-border); color: var(--amber-primary); margin: 0 auto 14px;">
+              <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </div>
+            <h3 style="font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">No memories match your filter</h3>
+            <p style="font-size: 13.5px; color: var(--text-secondary); margin-bottom: 16px;">Try adjusting your keyword query, category, or importance filter.</p>
+            <button class="btn btn-secondary btn-sm" onclick="resetAllFilters()">Clear Filters</button>
+          </div>
+        `;
+        return;
+      }
+
+      // Grid View
+      if (currentViewMode === 'grid') {
+        let html = `<div class="mc-cards-grid">`;
+        filtered.forEach(m => {
+          const catClass = getCategoryBadgeClass(m.category);
+          const isProt = (m.privacy || '').toLowerCase() === 'protected';
+          const privClass = isProt ? 'mc-badge-protected' : 'mc-badge-safe';
+          const privText = isProt ? 'LOCKED / PROTECTED' : 'SAFE / PUBLIC';
+          const impClass = (m.importance || '').toLowerCase() === 'high' ? 'mc-badge-high' : ((m.importance || '').toLowerCase() === 'medium' ? 'mc-badge-med' : 'mc-badge-low');
+          const impBars = renderImportanceBars(m.importance);
+          const staleBadge = isMemoryStale(m) ? `<span class="mc-badge mc-badge-stale" title="Not mentioned or seen in >14 days">Inactive &gt;14d</span>` : '';
+          const mentions = m.mention_count || 1;
+
+          html += `
+            <div class="mc-card" id="card-${m.id}">
+              <div class="mc-card-top">
+                <span class="mc-id-badge">${m.id}</span>
+                <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                  ${staleBadge}
+                  <span class="mc-badge ${catClass}">${escapeHtml(m.category || 'Skill')}</span>
+                  <span class="mc-badge ${impClass}">${escapeHtml(m.importance || 'Medium')}</span>
+                  <span class="mc-badge ${privClass}">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <span>${privText}</span>
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <div class="mc-card-title" onclick="openDetailById('${m.id}')">${escapeHtml(m.title)}</div>
+                <div class="mc-card-fact">${escapeHtml(m.fact)}</div>
+              </div>
+
+              <div class="mc-card-meta">
+                <div class="mc-meta-row">
+                  <span class="mc-meta-item">Importance Meter:</span>
+                  ${impBars}
+                </div>
+                <div class="mc-meta-row">
+                  <span class="mc-meta-item">Mentioned <strong>${mentions}</strong> ${mentions === 1 ? 'time' : 'times'}</span>
+                  <span class="mono" title="Last seen timestamp">Last seen: ${escapeHtml(m.last_seen || m.created || '---')}</span>
+                </div>
+              </div>
+
+              <div class="mc-card-actions">
+                <button class="btn btn-ghost btn-sm" onclick="openDetailById('${m.id}')" title="Inspect memory details">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <span>View</span>
+                </button>
+                <button class="btn btn-ghost btn-sm" onclick="openEditModalById('${m.id}')" title="Edit memory record">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  <span>Edit</span>
+                </button>
+                <button class="btn btn-ghost btn-sm btn-danger-ghost" onclick="deleteMemoryById('${m.id}')" title="Delete memory">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  <span>Delete</span>
+                </button>
+              </div>
+            </div>
+          `;
+        });
+        html += `</div>`;
+        container.innerHTML = html;
+      } else {
+        // Table View
+        let html = `
+          <div class="mc-table-container">
+            <table class="mc-table">
+              <thead>
+                <tr>
+                  <th style="width: 70px;">ID</th>
+                  <th>Title &amp; Fact Statement</th>
+                  <th>Category</th>
+                  <th>Importance</th>
+                  <th>Privacy Status</th>
+                  <th>Mentions</th>
+                  <th>Last Seen</th>
+                  <th style="text-align: right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+        `;
+        filtered.forEach(m => {
+          const catClass = getCategoryBadgeClass(m.category);
+          const isProt = (m.privacy || '').toLowerCase() === 'protected';
+          const privClass = isProt ? 'mc-badge-protected' : 'mc-badge-safe';
+          const privText = isProt ? 'PROTECTED' : 'SAFE';
+          const mentions = m.mention_count || 1;
+
+          html += `
+            <tr id="row-${m.id}">
+              <td><span class="mc-id-badge">${m.id}</span></td>
+              <td>
+                <div style="font-weight: 700; cursor: pointer; color: var(--text-primary);" onclick="openDetailById('${m.id}')">${escapeHtml(m.title)}</div>
+                <div style="font-size: 12.5px; color: var(--text-secondary); margin-top: 2px;">${escapeHtml(m.fact)}</div>
+              </td>
+              <td><span class="mc-badge ${catClass}">${escapeHtml(m.category || 'Skill')}</span></td>
+              <td><span style="font-weight: 600;">${escapeHtml(m.importance || 'Medium')}</span></td>
+              <td><span class="mc-badge ${privClass}">${privText}</span></td>
+              <td class="mono">${mentions}</td>
+              <td class="mono" style="font-size: 12px; color: var(--text-muted);">${escapeHtml(m.last_seen || m.created || '---')}</td>
+              <td style="text-align: right;">
+                <div style="display: inline-flex; gap: 6px;">
+                  <button class="btn btn-ghost btn-sm" onclick="openDetailById('${m.id}')" title="View Details">View</button>
+                  <button class="btn btn-ghost btn-sm" onclick="openEditModalById('${m.id}')" title="Edit">Edit</button>
+                  <button class="btn btn-ghost btn-sm btn-danger-ghost" onclick="deleteMemoryById('${m.id}')" title="Delete">Delete</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        });
+        html += `</tbody></table></div>`;
+        container.innerHTML = html;
+      }
     }
 
-    function escapeHtml(str) {
-      const d = document.createElement('div');
-      d.textContent = str || '';
-      return d.innerHTML;
+    function getCategoryBadgeClass(category) {
+      const cat = (category || '').toLowerCase();
+      if (cat === 'skill') return 'mc-badge-skill';
+      if (cat === 'preference') return 'mc-badge-pref';
+      if (cat === 'project') return 'mc-badge-proj';
+      if (cat === 'fact') return 'mc-badge-fact';
+      return 'mc-badge-general';
     }
 
+    function renderImportanceBars(importance) {
+      const imp = (importance || 'medium').toLowerCase();
+      let filledClass = 'filled-med';
+      let count = 2;
+      if (imp === 'high') { filledClass = 'filled-high'; count = 3; }
+      else if (imp === 'low') { filledClass = 'filled-low'; count = 1; }
+
+      return `
+        <div class="mc-importance-meter" title="Importance: ${importance || 'Medium'}">
+          <span class="mc-meter-bar ${count >= 1 ? filledClass : ''}"></span>
+          <span class="mc-meter-bar ${count >= 2 ? filledClass : ''}"></span>
+          <span class="mc-meter-bar ${count >= 3 ? filledClass : ''}"></span>
+        </div>
+      `;
+    }
+
+    /* Detail Drawer Inspector */
     function openDetailById(id) {
-      const m = pageMemories.find(item => item.id === id);
+      const m = allMemories.find(item => item.id === id);
       if (!m) return;
       activeDetailId = id;
-      document.getElementById('detailTitle').textContent = `${m.title} — ${m.fact}`;
-      document.getElementById('detailCategory').textContent = m.category || 'Skill';
-      document.getElementById('detailImportance').textContent = m.importance || 'High';
-      document.getElementById('detailConfidence').textContent = `${m.confidence || 94}%`;
-      document.getElementById('detailPrivacy').textContent = m.privacy || 'Safe';
+
+      document.getElementById('detailId').textContent = m.id;
+      document.getElementById('detailDrawerTitle').textContent = m.title || 'Memory Details';
+      document.getElementById('detailTitle').textContent = m.title || 'Untitled';
+      document.getElementById('detailFact').textContent = m.fact || 'No statement available';
+
+      const catBadge = document.getElementById('detailCategoryBadge');
+      catBadge.innerHTML = `<span class="mc-badge ${getCategoryBadgeClass(m.category)}">${escapeHtml(m.category || 'Skill')}</span>`;
+
+      document.getElementById('detailImportanceText').textContent = m.importance || 'Medium';
+      document.getElementById('detailImportanceMeter').innerHTML = renderImportanceBars(m.importance);
+
+      const privBadge = document.getElementById('detailPrivacyBadge');
+      const isProt = (m.privacy || '').toLowerCase() === 'protected';
+      privBadge.innerHTML = `<span class="mc-badge ${isProt ? 'mc-badge-protected' : 'mc-badge-safe'}">${isProt ? 'PL2 Protected' : 'PL1 Safe / Public'}</span>`;
+
+      document.getElementById('detailConfidence').textContent = `${m.confidence || 95}%`;
+
+      const mentions = m.mention_count || 1;
+      document.getElementById('detailMentionsBadge').textContent = `${mentions} ${mentions === 1 ? 'mention' : 'mentions'}`;
+
+      document.getElementById('detailLastSeen').textContent = m.last_seen || m.created || '---';
+      document.getElementById('detailCreated').textContent = m.created || '---';
+      document.getElementById('detailSource').textContent = m.source || 'Conversation';
+
+      // Real OKF Spec Document Preview
+      const slug = (m.title || 'memory').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const okfSpecText = `---
+type: User ${m.category || 'General'}
+title: ${m.title || 'Untitled Memory'}
+description: ${m.fact || ''}
+importance: ${m.importance || 'Medium'}
+privacy_tier: ${m.privacy || 'Protected'}
+confidence: ${m.confidence || 95}%
+tags:
+  - ${slug}
+  - ${(m.category || 'general').toLowerCase()}
+---
+
+# ${m.title || 'Untitled Memory'}
+
+${m.fact || ''}`;
+
+      document.getElementById('detailOkfSpec').textContent = okfSpecText;
+
+      document.getElementById('drawerOverlay').classList.add('open');
       document.getElementById('detailDrawer').classList.add('open');
     }
 
     function closeDetail() {
+      document.getElementById('drawerOverlay').classList.remove('open');
       document.getElementById('detailDrawer').classList.remove('open');
+      activeDetailId = null;
     }
 
-    async function deleteActiveDetailMemory() {
-      if (!activeDetailId) return;
-      try {
-        const res = await fetch(`http://localhost:5000/api/memories/${activeDetailId}`, { method: 'DELETE' });
-        const data = await res.json();
-        if (res.ok && data.success) {
-          pageMemories = pageMemories.filter(m => m.id !== activeDetailId);
-          renderPageMemories();
-          closeDetail();
-        }
-      } catch (err) {
-        console.error('Failed to delete memory:', err);
+    function copyOKFSpec() {
+      const text = document.getElementById('detailOkfSpec')?.textContent;
+      if (text && navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast('OKF specification copied to clipboard');
+        });
       }
     }
 
-    window.addEventListener('DOMContentLoaded', loadPageMemories);
+    /* Edit Memory Modal */
+    function openEditModalById(id) {
+      const m = allMemories.find(item => item.id === id);
+      if (!m) return;
+
+      document.getElementById('editMemoryId').value = m.id;
+      document.getElementById('editModalTitle').textContent = `Edit Memory (${m.id})`;
+      document.getElementById('editTitle').value = m.title || '';
+      document.getElementById('editFact').value = m.fact || '';
+      document.getElementById('editCategory').value = m.category || 'Skill';
+      document.getElementById('editImportance').value = m.importance || 'Medium';
+      document.getElementById('editPrivacy').value = m.privacy || 'Protected';
+
+      document.getElementById('editModal').classList.add('open');
+    }
+
+    function openEditModalForActive() {
+      if (activeDetailId) {
+        openEditModalById(activeDetailId);
+      }
+    }
+
+    function closeEditModal(e) {
+      if (e && e.target !== e.currentTarget) return;
+      document.getElementById('editModal').classList.remove('open');
+    }
+
+    async function saveMemoryEdit() {
+      const id = document.getElementById('editMemoryId').value;
+      const title = document.getElementById('editTitle').value.trim();
+      const fact = document.getElementById('editFact').value.trim();
+      const category = document.getElementById('editCategory').value;
+      const importance = document.getElementById('editImportance').value;
+      const privacy = document.getElementById('editPrivacy').value;
+
+      if (!title) {
+        alert('Please enter a memory title');
+        return;
+      }
+      if (!fact) {
+        alert('Please enter a fact statement');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/memories/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, fact, category, importance, privacy })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success && data.memory) {
+          const idx = allMemories.findIndex(m => m.id === id);
+          if (idx !== -1) {
+            allMemories[idx] = data.memory;
+          }
+          updateOverviewStatistics();
+          renderMemories();
+          closeEditModal();
+          showToast(`Memory ${id} updated successfully`);
+
+          if (activeDetailId === id) {
+            openDetailById(id);
+          }
+        } else {
+          alert(`Failed to update memory: ${data.error || 'Unknown error'}`);
+        }
+      } catch (err) {
+        console.error('Error saving memory edit:', err);
+        alert('Failed to connect to backend server');
+      }
+    }
+
+    /* Add Memory Modal */
+    function openAddModal() {
+      document.getElementById('addTitle').value = '';
+      document.getElementById('addFact').value = '';
+      document.getElementById('addCategory').value = 'Skill';
+      document.getElementById('addImportance').value = 'Medium';
+      document.getElementById('addPrivacy').value = 'Protected';
+      document.getElementById('addModal').classList.add('open');
+    }
+
+    function closeAddModal(e) {
+      if (e && e.target !== e.currentTarget) return;
+      document.getElementById('addModal').classList.remove('open');
+    }
+
+    async function submitNewMemory() {
+      const title = document.getElementById('addTitle').value.trim();
+      const fact = document.getElementById('addFact').value.trim();
+      const category = document.getElementById('addCategory').value;
+      const importance = document.getElementById('addImportance').value;
+      const privacy = document.getElementById('addPrivacy').value;
+
+      if (!title) {
+        alert('Please enter a memory title');
+        return;
+      }
+      if (!fact) {
+        alert('Please enter a fact statement');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/memories`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, fact, category, importance, privacy })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success && data.memory) {
+          allMemories.push(data.memory);
+          updateOverviewStatistics();
+          renderMemories();
+          closeAddModal();
+          showToast(`Memory ${data.memory.id} created successfully`);
+        } else {
+          alert(`Failed to create memory: ${data.error || 'Unknown error'}`);
+        }
+      } catch (err) {
+        console.error('Error creating memory:', err);
+        alert('Failed to connect to backend server');
+      }
+    }
+
+    /* Delete Memory with Confirmation */
+    async function deleteMemoryById(id) {
+      const m = allMemories.find(item => item.id === id);
+      const title = m ? m.title : id;
+      if (!confirm(`Are you sure you want to permanently delete memory ${id} ("${title}")? This will remove it from persistent storage and delete its OKF concept.`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/memories/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          allMemories = allMemories.filter(item => item.id !== id);
+          updateOverviewStatistics();
+          renderMemories();
+          if (activeDetailId === id) {
+            closeDetail();
+          }
+          showToast(`Memory ${id} deleted successfully`);
+        } else {
+          alert(`Failed to delete memory: ${data.error || 'Unknown error'}`);
+        }
+      } catch (err) {
+        console.error('Error deleting memory:', err);
+        alert('Failed to connect to backend server');
+      }
+    }
+
+    function confirmDeleteActive() {
+      if (activeDetailId) {
+        deleteMemoryById(activeDetailId);
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      const d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('btn-view-grid')?.classList.toggle('active', currentViewMode === 'grid');
+      document.getElementById('btn-view-table')?.classList.toggle('active', currentViewMode === 'table');
+      loadMemories();
+    });
   </script>
+  <script src="shell.js"></script>
 </body>
 </html>

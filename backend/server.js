@@ -191,6 +191,187 @@ app.get('/api/memories', (req, res) => {
   });
 });
 
+app.get('/api/memories/:id', (req, res) => {
+  try {
+    const memoryId = req.params.id;
+    if (!memoryId) {
+      return res.status(400).json({ success: false, error: 'Memory ID is required' });
+    }
+    const memory = memories.find(m => m.id === memoryId);
+    if (!memory) {
+      return res.status(404).json({ success: false, error: 'Memory not found' });
+    }
+    res.json({
+      success: true,
+      memory: memory
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/memories', (req, res) => {
+  try {
+    const { title, fact, category, importance, privacy } = req.body || {};
+    if (!title || typeof title !== 'string' || !title.trim()) {
+      return res.status(400).json({ success: false, error: 'Title is required and cannot be empty' });
+    }
+    if (!fact || typeof fact !== 'string' || !fact.trim()) {
+      return res.status(400).json({ success: false, error: 'Fact is required and cannot be empty' });
+    }
+
+    const validCategories = ["Skill", "Preference", "Project", "Fact", "General"];
+    let cat = (category || 'General').trim();
+    const matchedCat = validCategories.find(c => c.toLowerCase() === cat.toLowerCase());
+    if (!matchedCat) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid category. Must be one of: ${validCategories.join(', ')}`
+      });
+    }
+
+    const validImportance = ["High", "Medium", "Low"];
+    let imp = (importance || 'Medium').trim();
+    const matchedImp = validImportance.find(i => i.toLowerCase() === imp.toLowerCase());
+    if (!matchedImp) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid importance. Must be one of: ${validImportance.join(', ')}`
+      });
+    }
+
+    const validPrivacy = ["Protected", "Safe"];
+    let priv = (privacy || 'Protected').trim();
+    const matchedPriv = validPrivacy.find(p => p.toLowerCase() === priv.toLowerCase());
+    if (!matchedPriv) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid privacy. Must be one of: ${validPrivacy.join(', ')}`
+      });
+    }
+
+    const maxNum = memories.reduce((max, item) => {
+      const num = parseInt((item.id || '').replace(/^M0*/, ''), 10);
+      return !isNaN(num) && num > max ? num : max;
+    }, 0);
+
+    const nextId = `M${String(maxNum + 1).padStart(3, '0')}`;
+    const today = getFormattedDate();
+
+    const newMem = {
+      id: nextId,
+      title: title.trim(),
+      fact: fact.trim(),
+      category: matchedCat,
+      importance: matchedImp,
+      confidence: 95,
+      privacy: matchedPriv,
+      source: "Manual",
+      created: today,
+      mention_count: 1,
+      last_seen: today
+    };
+
+    memories.push(newMem);
+    saveMemories(memories);
+    generateOKFConcept(newMem);
+
+    res.status(201).json({
+      success: true,
+      message: 'Memory created successfully',
+      memory: newMem
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.put('/api/memories/:id', (req, res) => {
+  try {
+    const memoryId = req.params.id;
+    if (!memoryId) {
+      return res.status(400).json({ success: false, error: 'Memory ID is required' });
+    }
+
+    const index = memories.findIndex(m => m.id === memoryId);
+    if (index === -1) {
+      return res.status(404).json({ success: false, error: 'Memory not found' });
+    }
+
+    const existingMemory = memories[index];
+    const oldCopy = { ...existingMemory };
+    const { title, fact, category, importance, privacy } = req.body || {};
+
+    if (title !== undefined) {
+      if (typeof title !== 'string' || !title.trim()) {
+        return res.status(400).json({ success: false, error: 'Title cannot be empty' });
+      }
+      existingMemory.title = title.trim();
+    }
+
+    if (fact !== undefined) {
+      if (typeof fact !== 'string' || !fact.trim()) {
+        return res.status(400).json({ success: false, error: 'Fact cannot be empty' });
+      }
+      existingMemory.fact = fact.trim();
+    }
+
+    if (category !== undefined) {
+      const validCategories = ["Skill", "Preference", "Project", "Fact", "General"];
+      const matched = validCategories.find(c => c.toLowerCase() === String(category).trim().toLowerCase());
+      if (!matched) {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid category. Must be one of: ${validCategories.join(', ')}`
+        });
+      }
+      existingMemory.category = matched;
+    }
+
+    if (importance !== undefined) {
+      const validImportance = ["High", "Medium", "Low"];
+      const matched = validImportance.find(i => i.toLowerCase() === String(importance).trim().toLowerCase());
+      if (!matched) {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid importance. Must be one of: ${validImportance.join(', ')}`
+        });
+      }
+      existingMemory.importance = matched;
+    }
+
+    if (privacy !== undefined) {
+      const validPrivacy = ["Protected", "Safe"];
+      const matched = validPrivacy.find(p => p.toLowerCase() === String(privacy).trim().toLowerCase());
+      if (!matched) {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid privacy. Must be one of: ${validPrivacy.join(', ')}`
+        });
+      }
+      existingMemory.privacy = matched;
+    }
+
+    existingMemory.last_seen = getFormattedDate();
+
+    // If title changed, delete old OKF concept and update index
+    if (oldCopy.title && oldCopy.title !== existingMemory.title) {
+      deleteOKFConcept(oldCopy);
+    }
+
+    saveMemories(memories);
+    generateOKFConcept(existingMemory);
+
+    res.json({
+      success: true,
+      message: 'Memory updated successfully',
+      memory: existingMemory
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 
 function deleteOKFConcept(memory) {
   try {

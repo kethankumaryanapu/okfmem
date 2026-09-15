@@ -6,226 +6,227 @@
   <title>OKFMem — Memory Analytics</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg-base: #0B0F17;
-      --bg-surface: #131A27;
-      --bg-glass: rgba(19, 26, 39, 0.75);
-      --bg-hover: #1E283A;
-      --bg-inset: #090D14;
-      
-      --border-subtle: rgba(255, 255, 255, 0.08);
-      --border-medium: rgba(255, 255, 255, 0.16);
-      --border-strong: rgba(255, 255, 255, 0.28);
-
-      --text-main: #F1F5F9;
-      --text-muted: #94A3B8;
-      --text-dim: #64748B;
-
-      --accent: #D4954A;
-      --accent-2: #E8A85C;
-      --accent-bg: rgba(212, 149, 74, 0.12);
-      --accent-border: rgba(212, 149, 74, 0.3);
-
-      --teal: #4ECDC4;
-      --teal-bg: rgba(78, 205, 196, 0.12);
-      --teal-border: rgba(78, 205, 196, 0.3);
-
-      --blue: #4A90E2;
-      --blue-bg: rgba(74, 144, 226, 0.12);
-
-      --font-serif: 'Fraunces', Georgia, serif;
-      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      --font-mono: 'JetBrains Mono', monospace;
-
-      --radius-sm: 8px;
-      --radius-md: 14px;
-      --radius-lg: 20px;
-      --shadow-card: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
-    }
-
-    html[data-theme="light"] {
-      --bg-base: #F8FAFC;
-      --bg-surface: #FFFFFF;
-      --bg-glass: rgba(255, 255, 255, 0.85);
-      --bg-hover: #F1F5F9;
-      --bg-inset: #F1F5F9;
-
-      --border-subtle: rgba(0, 0, 0, 0.08);
-      --border-medium: rgba(0, 0, 0, 0.16);
-      --border-strong: rgba(0, 0, 0, 0.28);
-
-      --text-main: #0F172A;
-      --text-muted: #475569;
-      --text-dim: #94A3B8;
-
-      --accent: #B47326;
-      --accent-2: #925A1A;
-      --accent-bg: rgba(180, 115, 38, 0.1);
-    }
-
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background-color: var(--bg-base); color: var(--text-main); font-family: var(--font-sans); display: flex; height: 100vh; overflow: hidden; }
-
-    .app-layout { display: flex; width: 100vw; height: 100vh; overflow: hidden; }
-
-    /* Sidebar */
-    .sidebar { width: 260px; background: var(--bg-surface); border-right: 1px solid var(--border-subtle); display: flex; flex-direction: column; justify-content: space-between; padding: 20px 16px; flex-shrink: 0; }
-    .brand-block { display: flex; align-items: center; gap: 12px; padding: 8px 12px 20px 12px; border-bottom: 1px solid var(--border-subtle); }
-    .brand-icon { width: 34px; height: 34px; background: linear-gradient(135deg, var(--accent), var(--teal)); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #000; font-weight: 800; font-family: var(--font-serif); }
-    .brand-title { font-family: var(--font-serif); font-size: 19px; font-weight: 700; color: var(--text-main); }
-    .nav-section { margin-top: 18px; }
-    .nav-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); padding: 6px 12px; font-weight: 600; }
-    .nav-list { list-style: none; margin-top: 4px; }
-    .nav-item a { display: flex; align-items: center; gap: 12px; padding: 10px 12px; color: var(--text-muted); text-decoration: none; font-size: 13.5px; font-weight: 500; border-radius: var(--radius-sm); transition: all 0.15s ease; }
-    .nav-item a:hover { background: var(--bg-hover); color: var(--text-main); }
-    .nav-item.active a { background: var(--accent-bg); color: var(--accent-2); border: 1px solid var(--accent-border); font-weight: 600; }
-    .nav-item svg { stroke-width: 2px; width: 18px; height: 18px; }
-
-    .user-footer { border-top: 1px solid var(--border-subtle); padding-top: 16px; display: flex; align-items: center; justify-content: space-between; }
-    .user-card { display: flex; align-items: center; gap: 10px; }
-    .avatar { width: 34px; height: 34px; background: var(--accent); color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
-    .user-info { display: flex; flex-direction: column; }
-    .user-name { font-size: 13px; font-weight: 600; color: var(--text-main); }
-    .user-role { font-size: 11px; color: var(--text-dim); }
-
-    .theme-toggle { background: transparent; border: 1px solid var(--border-subtle); color: var(--text-muted); width: 32px; height: 32px; border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; justify-content: center; }
-
-    /* Main Area */
-    .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow-y: auto; background: var(--bg-base); }
-    .topbar { height: 64px; padding: 0 28px; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; background: var(--bg-glass); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 5; }
-    .breadcrumbs { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-dim); }
-    .breadcrumbs span.current { color: var(--text-main); font-weight: 600; font-family: var(--font-serif); font-size: 17px; }
-
-    .content-container { padding: 28px; max-width: 1400px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 24px; }
-
-    .card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 22px; box-shadow: var(--shadow-card); }
-    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
-    .card-title { font-family: var(--font-serif); font-size: 18px; font-weight: 600; color: var(--text-main); }
-
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-
-    .stat-box { background: var(--bg-inset); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; gap: 6px; }
-    .stat-label { font-size: 11px; text-transform: uppercase; color: var(--text-dim); font-weight: 600; }
-    .stat-num { font-family: var(--font-mono); font-size: 26px; font-weight: 600; color: var(--text-main); }
-
-    .mono { font-family: var(--font-mono); }
-  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="app-layout">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div>
-        <div class="brand-block">
-          <div class="brand-icon">O</div>
-          <div class="brand-title">OKFMem</div>
-        </div>
+  <!-- Full Viewport Shell -->
+  <div class="app-shell">
 
-        <div class="nav-section">
-          <div class="nav-label">Overview</div>
-          <ul class="nav-list">
-            <li class="nav-item"><a href="okfmem-dashboard.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a></li>
-            <li class="nav-item"><a href="index.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>AI Chat</a></li>
-          </ul>
-        </div>
-
-        <div class="nav-section">
-          <div class="nav-label">Memory</div>
-          <ul class="nav-list">
-            <li class="nav-item"><a href="memories.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Memories</a></li>
-            <li class="nav-item"><a href="memory-timeline.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Timeline</a></li>
-            <li class="nav-item active"><a href="analytics.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</a></li>
-          </ul>
-        </div>
-
-        <div class="nav-section">
-          <div class="nav-label">Data</div>
-          <ul class="nav-list">
-            <li class="nav-item"><a href="privacy.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Privacy</a></li>
-            <li class="nav-item"><a href="activity.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Activity</a></li>
-            <li class="nav-item"><a href="okf-import-export.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Import / Export</a></li>
-          </ul>
-        </div>
-
-        <div class="nav-section">
-          <div class="nav-label">Account</div>
-          <ul class="nav-list">
-            <li class="nav-item"><a href="profile.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profile</a></li>
-            <li class="nav-item"><a href="settings.html"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</a></li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="user-footer">
-        <div class="user-card">
-          <div class="avatar">KY</div>
-          <div class="user-info">
-            <span class="user-name">Kethan Kumar</span>
-            <span class="user-role">Pro Account</span>
-          </div>
-        </div>
-        <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    <!-- Top Navigation Header (Exact OKFMem Brand Header) -->
+    <header class="chatbot-header">
+      <div class="brand-group">
+        <button class="btn btn-ghost btn-icon btn-sidebar-toggle" id="btn-sidebar-toggle" onclick="toggleSidebar()" title="Toggle Navigation Menu">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
         </button>
+        <a href="index.html" class="brand-link" style="display: flex; align-items: center; text-decoration: none;">
+          <img src="logo.png" alt="OKFMem Logo" class="brand-logo" width="140" height="38">
+        </a>
+        <div class="header-divider"></div>
+        <a href="index.html" class="btn btn-ghost" id="btn-new-chat" title="Start New Conversation">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <span>Chat</span>
+        </a>
       </div>
-    </aside>
 
-    <!-- Main Content -->
-    <main class="main-wrapper">
-      <header class="topbar">
-        <div class="breadcrumbs">
-          <span>Memory</span>
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-          <span class="current">Memory Analytics (Sample Metrics)</span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <a href="index.html" class="btn btn-primary" style="text-decoration: none; font-size: 12.5px;">Launch Live Application ➔</a>
-        </div>
-      </header>
+      <div class="header-actions">
+        <!-- Privacy Shield Indicator -->
+        <a href="privacy.html" class="privacy-indicator" style="text-decoration: none;" title="MemPrivacy Active • Data Shielding Enabled">
+          <span class="privacy-indicator-dot"></span>
+          <span>Privacy Protected</span>
+        </a>
 
-      <div class="content-container">
-        <!-- Prototype Preview Banner -->
-        <div style="background: var(--bg-surface); border: 1px solid var(--border-medium); border-radius: var(--radius-md, 12px); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--text-muted); gap: 12px;">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="background: var(--accent-bg); border: 1px solid var(--accent-border); color: var(--accent); padding: 2px 8px; border-radius: 6px; font-weight: 600; font-size: 11px;">Prototype Preview</span>
-            <span>Analytics dashboard layout displaying sample metrics. Live application runs in index.html.</span>
+        <!-- Memory Center Badge -->
+        <a href="memories.html" class="memory-access-badge" id="btn-memory-center-badge" title="Open Memory Center">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+          <span>Memory Center</span>
+          <span class="memory-badge-counter" id="top-memory-count">3</span>
+        </a>
+
+        <!-- Theme Toggle -->
+        <button class="btn btn-ghost btn-icon" id="btn-theme-toggle" onclick="toggleTheme()" title="Toggle Dark/Light Theme">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+        </button>
+
+        <!-- Settings Link -->
+        <a href="settings.html" class="btn btn-ghost btn-icon" title="Settings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </a>
+
+        <div class="header-divider"></div>
+
+        <!-- User Profile Avatar -->
+        <a href="profile.html" class="user-avatar" title="Kethan Kumar • User Profile" style="text-decoration: none;">
+          KY
+        </a>
+      </div>
+    </header>
+
+    <!-- Application Shell Body -->
+    <div class="shell-body">
+      <!-- Collapsible Sidebar -->
+      <aside class="okf-sidebar" id="okf-sidebar">
+        <div>
+          <!-- MAIN Section -->
+          <div class="okf-nav-section">
+            <div class="okf-nav-label">MAIN</div>
+            <ul class="okf-nav-list">
+              <li class="okf-nav-item">
+                <a href="index.html" data-tooltip="Chat">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  <span class="nav-label-text">Chat</span>
+                </a>
+              </li>
+              <li class="okf-nav-item">
+                <a href="memories.html" data-tooltip="Memory Center">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                  <span class="nav-label-text">Memory Center</span>
+                </a>
+              </li>
+              <li class="okf-nav-item">
+                <a href="privacy.html" data-tooltip="Privacy">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  <span class="nav-label-text">Privacy</span>
+                </a>
+              </li>
+            </ul>
           </div>
-          <a href="index.html" class="btn btn-primary" style="padding: 6px 14px; font-size: 12.5px; text-decoration: none; border-radius: 8px;">Open Live App ➔</a>
+
+          <!-- DATA & KNOWLEDGE Section -->
+          <div class="okf-nav-section">
+            <div class="okf-nav-label">DATA & KNOWLEDGE</div>
+            <ul class="okf-nav-list">
+              <li class="okf-nav-item">
+                <a href="okf-import-export.html" data-tooltip="OKF / Portability">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  <span class="nav-label-text">OKF / Portability</span>
+                </a>
+              </li>
+              <li class="okf-nav-item">
+                <a href="activity.html" data-tooltip="Activity">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                  <span class="nav-label-text">Activity</span>
+                </a>
+              </li>
+              <li class="okf-nav-item active">
+                <a href="analytics.html" data-tooltip="Analytics">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                  <span class="nav-label-text">Analytics</span>
+                </a>
+              </li>
+              <li class="okf-nav-item">
+                <a href="memory-timeline.html" data-tooltip="Timeline">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  <span class="nav-label-text">Timeline</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- SYSTEM Section -->
+          <div class="okf-nav-section">
+            <div class="okf-nav-label">SYSTEM</div>
+            <ul class="okf-nav-list">
+              <li class="okf-nav-item">
+                <a href="settings.html" data-tooltip="Settings">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                  <span class="nav-label-text">Settings</span>
+                </a>
+              </li>
+              <li class="okf-nav-item">
+                <a href="profile.html" data-tooltip="Profile">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  <span class="nav-label-text">Profile</span>
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
+
+        <!-- Sidebar Footer Status -->
+        <div class="mc-sidebar-footer">
+          <div class="mc-system-status">
+            <div class="mc-status-row">
+              <span style="font-weight: 600; color: var(--text-primary);">OKF v0.2 Engine</span>
+              <span class="privacy-indicator-dot" style="margin: 0;"></span>
+            </div>
+            <div class="okf-sidebar-footer-text">Sync: backend/okf/user-memory</div>
+            <div class="mc-status-row" style="margin-top: 4px;">
+              <span>MemPrivacy Tier:</span>
+              <span style="color: var(--status-success); font-weight: 600;">PL2 Shield</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Mobile Drawer Overlay -->
+      <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
+
+      <!-- Main Content Area -->
+      <main class="okf-main">
+        <div class="okf-container">
+          <!-- Hero Header -->
+          <div class="okf-hero">
+            <div class="okf-hero-left">
+              <div class="okf-breadcrumb">
+                <a href="index.html">OKFMem</a>
+                <span class="crumb-sep">/</span>
+                <span class="crumb-current">Analytics</span>
+              </div>
+              <h1 class="okf-hero-title">Analytics</h1>
+              <p class="okf-hero-subtitle">Comprehensive metrics on knowledge retention, category distribution, retrieval hit rate in AI chats, and index growth.</p>
+            </div>
+            <div class="mc-hero-actions">
+              <a href="memories.html" class="btn btn-secondary btn-sm" style="text-decoration: none;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                <span>Memory Center</span>
+              </a>
+            </div>
+          </div>
+
         <!-- Churn & Retention Metrics -->
         <div class="grid-3">
           <div class="stat-box">
             <div class="stat-label">Memories Created (This Month)</div>
-            <div class="stat-num">+184</div>
-            <span style="font-size: 12px; color: var(--teal);">+14% vs previous month</span>
+            <div class="stat-num" style="color: var(--status-green);">+184</div>
+            <span style="font-size: 12px; color: var(--accent-cyan);">+14% vs previous month</span>
           </div>
           <div class="stat-box">
             <div class="stat-label">Memories Archived</div>
-            <div class="stat-num">24</div>
+            <div class="stat-num" style="color: var(--accent-blue);">24</div>
             <span style="font-size: 12px; color: var(--text-muted);">Auto-pruned after 60 days</span>
           </div>
           <div class="stat-box">
             <div class="stat-label">Memories Deleted</div>
-            <div class="stat-num">3</div>
-            <span style="font-size: 12px; color: var(--accent);">Manual user purges</span>
+            <div class="stat-num" style="color: var(--accent-red);">3</div>
+            <span style="font-size: 12px; color: var(--text-dim);">Manual user purges</span>
           </div>
         </div>
 
-        <!-- Hand-built SVG Charts Grid -->
-        <div class="grid-2">
+        <!-- Charts Grid (2 columns) -->
+        <div class="grid-2" style="margin-top: 24px;">
           <!-- Line Chart Card -->
           <div class="card">
             <div class="card-header">
               <div class="card-title">Memory Index Growth Trend</div>
               <span class="mono" style="font-size: 12px; color: var(--text-dim);">6-Month Trajectory</span>
             </div>
-            <div style="height: 220px; width: 100%; display: flex; align-items: flex-end;">
+            <div style="height: 220px; width: 100%; display: flex; align-items: flex-end; padding-top: 20px;">
               <svg viewBox="0 0 400 180" style="width: 100%; height: 100%; overflow: visible;">
-                <path d="M0,160 L60,140 L120,110 L180,100 L240,70 L300,50 L360,20 L400,10" fill="none" stroke="var(--accent)" stroke-width="3"/>
-                <circle cx="360" cy="20" r="5" fill="var(--accent)"/>
+                <defs>
+                  <linearGradient id="lineGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#FF3838" stop-opacity="0.25"/>
+                    <stop offset="100%" stop-color="#FF3838" stop-opacity="0.0"/>
+                  </linearGradient>
+                </defs>
+                <path d="M0,160 L60,140 L120,110 L180,100 L240,70 L300,50 L360,20 L400,10 L400,180 L0,180 Z" fill="url(#lineGrad)" />
+                <path d="M0,160 L60,140 L120,110 L180,100 L240,70 L300,50 L360,20 L400,10" fill="none" stroke="var(--accent-red)" stroke-width="3"/>
+                <circle cx="60" cy="140" r="4" fill="var(--accent-red)"/>
+                <circle cx="120" cy="110" r="4" fill="var(--accent-red)"/>
+                <circle cx="180" cy="100" r="4" fill="var(--accent-red)"/>
+                <circle cx="240" cy="70" r="4" fill="var(--accent-red)"/>
+                <circle cx="300" cy="50" r="4" fill="var(--accent-red)"/>
+                <circle cx="360" cy="20" r="5" fill="var(--accent-cyan)"/>
               </svg>
             </div>
           </div>
@@ -238,61 +239,52 @@
             </div>
             <div style="height: 220px; width: 100%; display: flex; align-items: flex-end; justify-content: space-around; padding-top: 20px;">
               <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; justify-content: flex-end;">
-                <div style="width: 40px; height: 140px; background: var(--accent); border-radius: 6px 6px 0 0;"></div>
-                <span style="font-size: 11px; color: var(--text-dim);">Skills</span>
+                <div style="width: 44px; height: 140px; background: var(--accent-red); border-radius: 6px 6px 0 0; box-shadow: 0 0 12px rgba(255, 56, 56, 0.4);"></div>
+                <span style="font-size: 12px; color: var(--text-main); font-weight: 500;">Skills</span>
               </div>
               <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; justify-content: flex-end;">
-                <div style="width: 40px; height: 100px; background: var(--teal); border-radius: 6px 6px 0 0;"></div>
-                <span style="font-size: 11px; color: var(--text-dim);">Projects</span>
+                <div style="width: 44px; height: 100px; background: var(--accent-cyan); border-radius: 6px 6px 0 0; box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);"></div>
+                <span style="font-size: 12px; color: var(--text-main); font-weight: 500;">Projects</span>
               </div>
               <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; justify-content: flex-end;">
-                <div style="width: 40px; height: 60px; background: var(--blue); border-radius: 6px 6px 0 0;"></div>
-                <span style="font-size: 11px; color: var(--text-dim);">Prefs</span>
+                <div style="width: 44px; height: 60px; background: var(--accent-blue); border-radius: 6px 6px 0 0;"></div>
+                <span style="font-size: 12px; color: var(--text-main); font-weight: 500;">Prefs</span>
               </div>
               <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; justify-content: flex-end;">
-                <div style="width: 40px; height: 30px; background: var(--border-strong); border-radius: 6px 6px 0 0;"></div>
-                <span style="font-size: 11px; color: var(--text-dim);">Auth</span>
+                <div style="width: 44px; height: 32px; background: var(--status-green); border-radius: 6px 6px 0 0;"></div>
+                <span style="font-size: 12px; color: var(--text-main); font-weight: 500;">Facts</span>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Most-Referenced Memories Ranked -->
-        <div class="card">
+        <!-- Top Referenced Memories in AI Chat -->
+        <div class="card" style="margin-top: 24px;">
           <div class="card-header">
             <div class="card-title">Top Referenced Memories in AI Chat</div>
+            <a href="memories.html" class="btn btn-secondary" style="font-size: 12px; padding: 5px 12px; text-decoration: none;">View in Memory Center ➔</a>
           </div>
           <div style="display: flex; flex-direction: column; gap: 14px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 13.5px;">
-              <div><strong style="color: var(--accent);">#1</strong> User is learning Python & Asyncio</div>
-              <span class="mono" style="color: var(--teal);">142 Hits</span>
+            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 14px; padding: 10px 14px; background: var(--bg-inset); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+              <div><strong style="color: var(--accent-red); margin-right: 8px;">#1</strong> User is learning Python & Asyncio</div>
+              <span class="mono" style="color: var(--accent-cyan); font-weight: 600;">142 Context Injections</span>
             </div>
-            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 13.5px;">
-              <div><strong style="color: var(--accent);">#2</strong> OKFMem Edge-Cloud Agent Architecture</div>
-              <span class="mono" style="color: var(--teal);">98 Hits</span>
+            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 14px; padding: 10px 14px; background: var(--bg-inset); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+              <div><strong style="color: var(--accent-red); margin-right: 8px;">#2</strong> OKFMem Edge-Cloud Agent Architecture</div>
+              <span class="mono" style="color: var(--accent-cyan); font-weight: 600;">98 Context Injections</span>
             </div>
-            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 13.5px;">
-              <div><strong style="color: var(--accent);">#3</strong> Prefers Vanilla CSS & Clean Tokens</div>
-              <span class="mono" style="color: var(--teal);">64 Hits</span>
+            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 14px; padding: 10px 14px; background: var(--bg-inset); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+              <div><strong style="color: var(--accent-red); margin-right: 8px;">#3</strong> Prefers Vanilla CSS & Clean Tokens</div>
+              <span class="mono" style="color: var(--accent-cyan); font-weight: 600;">64 Context Injections</span>
             </div>
           </div>
         </div>
+
       </div>
     </main>
-  </div>
+  </div> <!-- /shell-body -->
+</div> <!-- /app-shell -->
 
-  <script>
-    function toggleTheme() {
-      const html = document.documentElement;
-      const current = html.getAttribute('data-theme') || 'dark';
-      const nextTheme = current === 'light' ? 'dark' : 'light';
-      html.setAttribute('data-theme', nextTheme);
-      localStorage.setItem('okfmem_theme', nextTheme);
-    }
-    (function() {
-      const saved = localStorage.getItem('okfmem_theme') || 'dark';
-      document.documentElement.setAttribute('data-theme', saved);
-    })();
-  </script>
+  <script src="shell.js"></script>
 </body>
 </html>
