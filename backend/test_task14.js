@@ -13,10 +13,16 @@ function backupData() {
   }
 }
 
+const { generateOKFConcept } = require('./okf/okfGenerator');
+
 function restoreData() {
   if (fs.existsSync(BACKUP_MEMORIES_FILE)) {
     fs.copyFileSync(BACKUP_MEMORIES_FILE, MEMORIES_FILE);
-    fs.unlinkSync(BACKUP_MEMORIES_FILE);
+    try {
+      const restored = JSON.parse(fs.readFileSync(MEMORIES_FILE, 'utf8'));
+      restored.forEach(m => generateOKFConcept(m));
+    } catch (_) {}
+    try { fs.unlinkSync(BACKUP_MEMORIES_FILE); } catch (e) {}
   }
 }
 
@@ -88,7 +94,10 @@ async function runTask14Tests() {
     if (targetMemory) {
       const targetId = targetMemory.id;
       const slug = (targetMemory.title || "memory").toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'memory';
-      const conceptFile = path.resolve(__dirname, 'okf', 'user-memory', 'memories', `${slug}.md`);
+      const cat = (targetMemory.category || 'general').toLowerCase();
+      const catFolder = cat === 'skill' ? 'skills' : cat === 'preference' ? 'preferences' : cat === 'project' ? 'projects' : cat === 'fact' ? 'facts' : 'general';
+      const catConceptFile = path.resolve(__dirname, 'okf', 'user-memory', catFolder, `${slug}.md`);
+      const legacyConceptFile = path.resolve(__dirname, 'okf', 'user-memory', 'memories', `${slug}.md`);
 
       // 2. Perform DELETE request
       console.log(`\n[Test 14.2] DELETE /api/memories/${targetId}`);
@@ -101,15 +110,15 @@ async function runTask14Tests() {
       assert(!foundInDisk, 'Memory successfully removed from memories.json on disk');
 
       // 4. Check OKF Concept file deletion
-      const conceptExists = fs.existsSync(conceptFile);
-      assert(!conceptExists, `OKF Concept Markdown file deleted from disk: ${slug}.md`);
+      const conceptExists = fs.existsSync(catConceptFile) || fs.existsSync(legacyConceptFile);
+      assert(!conceptExists, `OKF Concept Markdown file deleted from disk: ${catFolder}/${slug}.md`);
 
       // 5. Check OKF Index cleanup
       const indexPath = path.resolve(__dirname, 'okf', 'user-memory', 'index.md');
       let indexCleaned = true;
       if (fs.existsSync(indexPath)) {
         const indexText = fs.readFileSync(indexPath, 'utf8');
-        indexCleaned = !indexText.includes(`memories/${slug}.md`);
+        indexCleaned = !indexText.includes(`${catFolder}/${slug}.md`) && !indexText.includes(`memories/${slug}.md`);
       }
       assert(indexCleaned, 'OKF index.md link removed for deleted memory');
     }

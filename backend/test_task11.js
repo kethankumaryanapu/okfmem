@@ -1,6 +1,6 @@
 const path = require('path');
 const fs = require('fs');
-const { generateOKFConcept } = require('./okf/okfGenerator');
+const { generateOKFConcept, deleteOKFConcept } = require('./okf/okfGenerator');
 const { execFile } = require('child_process');
 
 console.log("=== Task 11 Adaptive Memory Importance Integration Test ===");
@@ -17,6 +17,9 @@ if (fs.existsSync(MEMORIES_FILE)) {
 }
 
 function restoreMemoriesBackup() {
+  try {
+    deleteOKFConcept({ title: "Rust Language", category: "Skill" });
+  } catch (_) {}
   if (backupData !== null && fs.existsSync(BACKUP_FILE)) {
     fs.writeFileSync(MEMORIES_FILE, backupData, 'utf8');
     fs.unlinkSync(BACKUP_FILE);

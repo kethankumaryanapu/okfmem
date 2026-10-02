@@ -21,15 +21,20 @@ function backup() {
 function restore() {
   if (fs.existsSync(BACKUP_MEMORIES_FILE)) {
     fs.copyFileSync(BACKUP_MEMORIES_FILE, MEMORIES_FILE);
-    fs.unlinkSync(BACKUP_MEMORIES_FILE);
+    try { fs.unlinkSync(BACKUP_MEMORIES_FILE); } catch (e) {}
   }
   if (fs.existsSync(BACKUP_OKF_INDEX)) {
     fs.copyFileSync(BACKUP_OKF_INDEX, OKF_INDEX);
-    fs.unlinkSync(BACKUP_OKF_INDEX);
+    try { fs.unlinkSync(BACKUP_OKF_INDEX); } catch (e) {}
   }
+  const subdirs = ['skills', 'preferences', 'projects', 'facts', 'general', 'memories'];
   ['task1-test-skill', 'task1-renamed-skill', 'rust-performance'].forEach(slug => {
-    const f = path.resolve(OKF_DIR, `${slug}.md`);
-    if (fs.existsSync(f)) fs.unlinkSync(f);
+    subdirs.forEach(dir => {
+      const f = path.resolve(__dirname, 'okf', 'user-memory', dir, `${slug}.md`);
+      if (fs.existsSync(f)) {
+        try { fs.unlinkSync(f); } catch (e) {}
+      }
+    });
   });
 }
 
@@ -126,7 +131,8 @@ async function runTests() {
     assert(fileAfterCreate.some(m => m.id === createdMem.id), 'New memory persists in memories.json');
 
     const createdOkfFile = path.resolve(OKF_DIR, 'task1-test-skill.md');
-    assert(fs.existsSync(createdOkfFile), 'New memory generates OKF markdown file on disk');
+    const createdCatFile = path.resolve(__dirname, 'okf', 'user-memory', 'skills', 'task1-test-skill.md');
+    assert(fs.existsSync(createdOkfFile) || fs.existsSync(createdCatFile), 'New memory generates OKF markdown file on disk');
 
     // 4. PUT /api/memories/:id (edit memory)
     console.log('\n[Test 4] PUT /api/memories/:id');
@@ -148,9 +154,11 @@ async function runTests() {
 
     // Old slug should be deleted, new slug created
     const oldSlugFile = path.resolve(OKF_DIR, 'task1-test-skill.md');
+    const oldCatFile = path.resolve(__dirname, 'okf', 'user-memory', 'skills', 'task1-test-skill.md');
     const newSlugFile = path.resolve(OKF_DIR, 'task1-renamed-skill.md');
-    assert(!fs.existsSync(oldSlugFile), 'Old OKF markdown file was deleted after rename');
-    assert(fs.existsSync(newSlugFile), 'New OKF markdown file was created with updated slug');
+    const newCatFile = path.resolve(__dirname, 'okf', 'user-memory', 'preferences', 'task1-renamed-skill.md');
+    assert(!fs.existsSync(oldSlugFile) && !fs.existsSync(oldCatFile), 'Old OKF markdown file was deleted after rename');
+    assert(fs.existsSync(newSlugFile) || fs.existsSync(newCatFile), 'New OKF markdown file was created with updated slug');
 
     // 5. Validation on PUT
     console.log('\n[Test 5] Input Validation on PUT');
@@ -171,7 +179,7 @@ async function runTests() {
 
     const fileAfterDelete = JSON.parse(fs.readFileSync(MEMORIES_FILE, 'utf8'));
     assert(!fileAfterDelete.some(m => m.id === createdMem.id), 'Deleted memory removed from memories.json');
-    assert(!fs.existsSync(newSlugFile), 'OKF markdown file deleted from disk');
+    assert(!fs.existsSync(newSlugFile) && !fs.existsSync(newCatFile), 'OKF markdown file deleted from disk');
 
   } catch (err) {
     console.error('Test error:', err);

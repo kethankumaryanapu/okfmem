@@ -383,51 +383,272 @@ function deleteActiveMemory() {
   closeMemoryModal();
 }
 
-/* OKF Representation Viewer */
+/* ==========================================================================
+   OKF v0.2 Knowledge Bundle Explorer Logic
+   ========================================================================== */
+let activeOKFPath = 'index.md';
+let activeOKFViewTab = 'formatted';
+let cachedOKFBundle = null;
+let activeOKFDocData = null;
+
+async function loadOKFBundleTree(preferredPathToSelect = null) {
+  const container = document.getElementById('okf-tree-content');
+  if (!container) return;
+
+  try {
+    const res = await fetch('http://localhost:5000/api/okf/tree');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (!data.success || !data.bundle) throw new Error('Invalid bundle structure');
+
+    cachedOKFBundle = data.bundle;
+    renderOKFBundleTree(data.bundle);
+
+    const pathToSelect = preferredPathToSelect || activeOKFPath || 'index.md';
+    await selectOKFFile(pathToSelect);
+  } catch (err) {
+    console.error('Failed to load OKF bundle tree:', err);
+    container.innerHTML = `<div style="padding: 10px; color: var(--amber-primary); font-size: 12px;">Failed to load bundle tree: ${err.message}</div>`;
+  }
+}
+
+function renderOKFBundleTree(bundle) {
+  const container = document.getElementById('okf-tree-content');
+  if (!container) return;
+
+  let html = '';
+
+  // 1. Root files (index.md, log.md)
+  if (Array.isArray(bundle.rootFiles)) {
+    for (const rf of bundle.rootFiles) {
+      const isIndex = rf.name === 'index.md';
+      const icon = isIndex
+        ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>`
+        : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`;
+
+      html += `
+        <div class="okf-tree-node ${activeOKFPath === rf.path ? 'active' : ''}" data-path="${rf.path}" onclick="selectOKFFile('${rf.path}')">
+          ${icon}
+          <span>${rf.name}</span>
+          <span class="node-badge">${rf.type}</span>
+        </div>
+      `;
+    }
+  }
+
+  // 2. Categories
+  if (Array.isArray(bundle.categories)) {
+    for (const cat of bundle.categories) {
+      const count = Array.isArray(cat.concepts) ? cat.concepts.length : 0;
+      html += `
+        <div class="okf-tree-group-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+          <span>${cat.title}</span>
+          <span style="margin-left: auto; font-size: 10px; color: var(--text-muted);">${count}</span>
+        </div>
+      `;
+
+      // Category index
+      if (cat.indexPath) {
+        html += `
+          <div class="okf-tree-node ${activeOKFPath === cat.indexPath ? 'active' : ''}" style="padding-left: 20px;" data-path="${cat.indexPath}" onclick="selectOKFFile('${cat.indexPath}')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            <span>index.md</span>
+            <span class="node-badge">index</span>
+          </div>
+        `;
+      }
+
+      // Category concepts
+      if (Array.isArray(cat.concepts)) {
+        for (const c of cat.concepts) {
+          html += `
+            <div class="okf-tree-node ${activeOKFPath === c.path ? 'active' : ''}" style="padding-left: 20px;" data-path="${c.path}" onclick="selectOKFFile('${c.path}')" title="${c.title}">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+              <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${c.filename}</span>
+            </div>
+          `;
+        }
+      }
+    }
+  }
+
+  container.innerHTML = html;
+}
+
+async function selectOKFFile(filePath) {
+  if (!filePath) return;
+  activeOKFPath = filePath;
+
+  // Highlight active node in tree
+  document.querySelectorAll('.okf-tree-node').forEach(el => {
+    if (el.getAttribute('data-path') === filePath) {
+      el.classList.add('active');
+    } else {
+      el.classList.remove('active');
+    }
+  });
+
+  const pathDisplay = document.getElementById('okf-active-filepath');
+  if (pathDisplay) pathDisplay.textContent = filePath;
+
+  try {
+    const res = await fetch(`http://localhost:5000/api/okf/file?path=${encodeURIComponent(filePath)}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Failed to read document');
+
+    activeOKFDocData = data;
+    renderOKFInspector(data);
+  } catch (err) {
+    console.error(`Failed to load OKF document "${filePath}":`, err);
+    renderOKFError(filePath, err.message);
+  }
+}
+
+function renderOKFInspector(data) {
+  const titleEl = document.getElementById('okf-concept-title');
+  const descEl = document.getElementById('okf-concept-desc');
+  const pillsEl = document.getElementById('okf-concept-pills');
+  const bodyEl = document.getElementById('okf-concept-body-rendered');
+  const fmCodeEl = document.getElementById('okf-frontmatter-code');
+  const rawCodeEl = document.getElementById('okf-raw-code');
+  const relationsCard = document.getElementById('okf-relations-card');
+  const relationsList = document.getElementById('okf-relations-list');
+
+  if (titleEl) titleEl.textContent = data.title || data.path;
+  if (descEl) descEl.textContent = data.frontmatter?.description || (data.path.endsWith('index.md') ? 'Directory listing document' : (data.path.endsWith('log.md') ? 'Update history log' : ''));
+
+  // Metadata pills
+  if (pillsEl) {
+    const fm = data.frontmatter || {};
+    let pillsHtml = '';
+
+    if (fm.type) {
+      pillsHtml += `<div class="okf-pill"><span class="okf-pill-label">Type:</span> <span class="okf-pill-val" style="color: #38BDF8;">${fm.type}</span></div>`;
+    }
+    if (fm.importance) {
+      pillsHtml += `<div class="okf-pill"><span class="okf-pill-label">Importance:</span> <span class="okf-pill-val" style="color: #F59E0B;">${fm.importance}</span></div>`;
+    }
+    if (fm.privacy_tier) {
+      pillsHtml += `<div class="okf-pill"><span class="okf-pill-label">Privacy:</span> <span class="okf-pill-val" style="color: #10B981;">${fm.privacy_tier}</span></div>`;
+    }
+    if (fm.status) {
+      pillsHtml += `<div class="okf-pill"><span class="okf-pill-label">Status:</span> <span class="okf-pill-val">${fm.status}</span></div>`;
+    }
+    if (fm['generated.by'] || (fm.generated && typeof fm.generated === 'object' && fm.generated.by)) {
+      const actor = fm['generated.by'] || fm.generated.by;
+      pillsHtml += `<div class="okf-pill"><span class="okf-pill-label">Actor:</span> <span class="okf-pill-val mono" style="font-size: 11px;">${actor}</span></div>`;
+    }
+
+    pillsEl.innerHTML = pillsHtml;
+  }
+
+  // Body rendering
+  if (bodyEl) {
+    bodyEl.textContent = data.body || data.content || '';
+  }
+
+  // Frontmatter view
+  if (fmCodeEl) {
+    fmCodeEl.textContent = data.frontmatterRaw || (data.frontmatter && Object.keys(data.frontmatter).length > 0 ? JSON.stringify(data.frontmatter, null, 2) : '# No frontmatter block present for this document');
+  }
+
+  // Raw Markdown view
+  if (rawCodeEl) {
+    rawCodeEl.textContent = data.content || '';
+  }
+
+  // Related Concepts
+  if (relationsCard && relationsList) {
+    if (Array.isArray(data.links) && data.links.length > 0) {
+      relationsCard.style.display = 'block';
+      let linksHtml = '';
+      for (const link of data.links) {
+        let resolvedPath = link.target;
+        if (resolvedPath.startsWith('../')) {
+          resolvedPath = resolvedPath.replace('../', '');
+        } else if (resolvedPath.startsWith('./')) {
+          const currentDir = data.path.includes('/') ? data.path.substring(0, data.path.lastIndexOf('/')) : '';
+          resolvedPath = currentDir ? `${currentDir}/${resolvedPath.replace('./', '')}` : resolvedPath.replace('./', '');
+        }
+
+        linksHtml += `
+          <li>
+            <a class="okf-relation-link" onclick="selectOKFFile('${resolvedPath}')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+              <span>${link.text}</span>
+              <span style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">(${link.target})</span>
+            </a>
+          </li>
+        `;
+      }
+      relationsList.innerHTML = linksHtml;
+    } else {
+      relationsCard.style.display = 'none';
+      relationsList.innerHTML = '';
+    }
+  }
+}
+
+function renderOKFError(filePath, errorMsg) {
+  const titleEl = document.getElementById('okf-concept-title');
+  const bodyEl = document.getElementById('okf-concept-body-rendered');
+  if (titleEl) titleEl.textContent = filePath;
+  if (bodyEl) bodyEl.innerHTML = `<span style="color: var(--status-error);">Error loading document: ${errorMsg}</span>`;
+}
+
+function switchOKFViewTab(tab) {
+  activeOKFViewTab = tab;
+  ['formatted', 'frontmatter', 'raw'].forEach(t => {
+    const btn = document.getElementById(`okf-tab-btn-${t}`);
+    const view = document.getElementById(`okf-view-${t}`);
+    if (btn) btn.classList.toggle('active', t === tab);
+    if (view) view.style.display = (t === tab) ? 'block' : 'none';
+  });
+}
+
+function copyActiveOKFDocument() {
+  if (activeOKFDocData && activeOKFDocData.content) {
+    navigator.clipboard.writeText(activeOKFDocData.content);
+    triggerToast(`Copied ${activeOKFDocData.path} to clipboard`);
+  } else {
+    triggerToast('No active document content to copy');
+  }
+}
+
+function copyOKFJson() {
+  copyActiveOKFDocument();
+}
+
+function refreshOKFBundleTree() {
+  loadOKFBundleTree(activeOKFPath);
+  triggerToast('OKF Bundle tree refreshed');
+}
+
 async function openOKFViewerForMemoryId(id) {
   activeMemoryId = id;
   const m = memories.find(item => item.id === id) || memories[0];
-  const okfCode = document.getElementById('okf-json-code');
-
-  if (okfCode && m) {
-    const slug = (m.title || "python").toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'python';
-    const filename = `${slug}.md`;
-
-    try {
-      const response = await fetch(`http://localhost:5000/api/okf/memories/${filename}`);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: Failed to fetch OKF document`);
-      }
-      const markdownText = await response.text();
-      okfCode.textContent = markdownText;
-    } catch (error) {
-      console.warn('Backend OKF file fetch fallback triggered for:', filename);
-      const conceptType = `User ${m.category || 'Skill'}`;
-      const title = m.title || 'Untitled Memory';
-      const fact = m.fact || '';
-      const tagSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      const catSlug = (m.category || 'skill').toLowerCase();
-      
-      const fallbackMarkdown = `---
-type: ${conceptType}
-title: ${title}
-description: ${fact}
-tags:
-  - ${tagSlug}
-  - ${catSlug}
----
-
-# ${title}
-
-${fact}`;
-
-      okfCode.textContent = fallbackMarkdown;
-    }
-  }
 
   closeMemoryModal();
   const okfModal = document.getElementById('okf-modal');
   if (okfModal) okfModal.classList.add('open');
+
+  let targetConceptPath = 'index.md';
+  if (m) {
+    const categoryDirs = {
+      Skill: 'skills',
+      Preference: 'preferences',
+      Project: 'projects',
+      Fact: 'facts',
+      General: 'general'
+    };
+    const catDir = categoryDirs[m.category] || 'general';
+    const slug = (m.title || "memory").toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'memory';
+    targetConceptPath = `${catDir}/${slug}.md`;
+  }
+
+  await loadOKFBundleTree(targetConceptPath);
 }
 
 function openOKFViewerForActiveMemory() {
@@ -438,14 +659,6 @@ function closeOKFModal(e) {
   if (e && e.stopPropagation) e.stopPropagation();
   const okfModal = document.getElementById('okf-modal');
   if (okfModal) okfModal.classList.remove('open');
-}
-
-function copyOKFJson() {
-  const code = document.getElementById('okf-json-code');
-  if (code) {
-    navigator.clipboard.writeText(code.textContent);
-    triggerToast('OKF content copied to clipboard');
-  }
 }
 
 /* Export OKF Knowledge Bundle */

@@ -496,13 +496,25 @@ def generate_offline_conversational_response(user_text: str, memory_context: str
     if any(k in clean_q for k in ["studying cse", "study cse", "studying computer science", "cse student", "computer science and engineering", "computer science"]):
         greeting_name = ""
         if store:
-            name_records = store.query_by_privacy_type("Real Name")
-            if name_records:
-                greeting_name = f" {name_records[-1]['original_text'].title()}"
+            for item in store.query_by_privacy_type("Real Name"):
+                orig = item.get("original_text", "").strip()
+                if orig and orig.lower() in unmasked_text.lower() and not re.match(r'^(?:<[A-Za-z_]+_\d+>|[a-z_]+_\d+|placeholder|user)$', orig, re.IGNORECASE):
+                    greeting_name = f" {orig.title()}"
+                    break
         return (
             f"Hello{greeting_name}! It's great to connect with a Computer Science and Engineering (CSE) student. "
             "CSE is an exciting and versatile field covering core subjects like algorithms, data structures, full-stack app development, databases, and systems. "
             "How can I help you with your studies, coding projects, or learning goals today?"
+        )
+
+    # Sensitive contact/credential acknowledgment in offline mode
+    if any(k in clean_q for k in [
+        "my email is", "email is", "my email", "my phone", "phone number is", "phone is",
+        "verification code", "my password", "my address", "my location"
+    ]):
+        return (
+            "Thank you. Your sensitive information has been securely received "
+            "and protected by MemPrivacy. How can I assist you with your projects today?"
         )
 
     # Case B: Learning to build apps / App development
@@ -674,11 +686,14 @@ def generate_offline_conversational_response(user_text: str, memory_context: str
         return "Docker allows you to package an application and its dependencies into a container, ensuring it runs identically across development, staging, and production environments."
 
     # 5. Contextual fallback for other queries (Guaranteed no placeholder leakage)
-    topic = re.sub(r'^(?:can you|could you|please|what is|tell me about|how do i|how to|i am|im|i\'m|currently|recently|learning to|learning how to|learning|studying|my name is)\s+', '', clean_q, flags=re.IGNORECASE).strip()
+    topic = re.sub(r'^(?:can you|could you|please|what is|tell me about|how do i|how to|i am|im|i\'m|currently|currenlty|recently|now|learning to|learning how to|learning|studying|my name is|my|i)\s+', '', clean_q, flags=re.IGNORECASE).strip()
     topic = re.sub(r'\b(?:real_name|email_address|phone_number|detailed_address|medical_health|financial_account|id_number|verification_code|password|key|token|mask)_[0-9]+\b', '', topic, flags=re.IGNORECASE).strip()
     topic = re.sub(r'\s+', ' ', topic)
-    if not topic or len(topic) < 2:
-        topic = "your query"
+    if not topic or len(topic) < 3 or topic in ["you", "your query", "query", "me"]:
+        return (
+            "I am currently in offline mode and ready to help you with software development, "
+            "programming languages, system architecture, and project ideas. What would you like to explore?"
+        )
     return (
         f"Regarding {topic}: while in offline mode, I can provide technical explanations, code skeletons, and best practices. "
         "Feel free to ask for specific code examples or architectural guidance!"
@@ -952,6 +967,9 @@ def clean_memory_title(title: str) -> str:
         sub_part = paren_match.group(2)
         norm_main = acronym_map.get(main_part.lower(), main_part.upper() if len(main_part) <= 4 else main_part.title())
         norm_sub = sub_part.title()
+        norm_sub = re.sub(r'\bAnd\b', 'and', norm_sub)
+        norm_sub = re.sub(r'\bOf\b', 'of', norm_sub)
+        norm_sub = re.sub(r'\bIn\b', 'in', norm_sub)
         return f"{norm_main} ({norm_sub})"
 
     if clean.lower() in acronym_map:
@@ -960,6 +978,29 @@ def clean_memory_title(title: str) -> str:
     if clean.islower():
         clean = clean.title()
     return clean
+
+def split_compound_items(raw_text: str) -> list:
+    """
+    Splits compound items such as 'HTML and CSS' or 'Python, React, and Node.js'
+    while preserving parenthetical explanations like 'CSE (Computer Science and Engineering)'.
+    """
+    if not raw_text or not isinstance(raw_text, str):
+        return []
+    text = raw_text.strip()
+    if re.search(r'\([^\)]+\)', text):
+        return [text]
+    normalized = re.sub(r',\s*and\s+', ', ', text, flags=re.IGNORECASE)
+    if ',' in normalized:
+        parts = [p.strip() for p in re.split(r'[,]+|\s+and\s+', normalized, flags=re.IGNORECASE) if p.strip()]
+        return parts if len(parts) > 1 else [text]
+    if re.search(r'\s+and\s+', text, re.IGNORECASE):
+        combined_phrases = {"computer science and engineering", "research and development", "data science and analytics"}
+        if text.lower() in combined_phrases:
+            return [text]
+        parts = [p.strip() for p in re.split(r'\s+and\s+', text, flags=re.IGNORECASE) if p.strip()]
+        if len(parts) == 2 and all(len(p) <= 25 for p in parts):
+            return parts
+    return [text]
 
 def extract_memories_from_text(masked_text: str, store: PrivacyStore, config: dict, has_cloud_llm: bool, cloud_config: dict) -> list:
     """
@@ -987,9 +1028,11 @@ def extract_memories_from_text(masked_text: str, store: PrivacyStore, config: di
     candidates = []
 
     # 1. Expanded Pattern & Heuristic Extraction
+    clause_delim = r'(?:\s+and\s+(?:i\b|i\'m\b|my\b|we\b|currently\b|currenlty\b|recently\b|now\b|also\b|learning\b|studying\b|working\b|building\b|prefer\b|using\b)|\s+with\b|\s+for\b|\s+at\b|[.,;]|$)'
+
     # 1a. Personal Identity / Name signals -> Category: Fact
     name_matches = re.finditer(
-        r'\b(?:my name is|call me|i am|i\'m)\s+([A-Za-z0-9_#+.\-<> ]+?)(?:\s+and\b|\s+with\b|\s+for\b|[.,;]|$)',
+        rf'\b(?:my name is|call me|i am|i\'m)\s+([A-Za-z0-9_#+.\-<> ]+?){clause_delim}',
         masked_text,
         re.IGNORECASE
     )
@@ -1010,20 +1053,21 @@ def extract_memories_from_text(masked_text: str, store: PrivacyStore, config: di
 
     # 1b. Academic Study / Education signals -> Category: Fact
     study_matches = re.finditer(
-        r'\b(?:i am|i\'m)?\s*(?:currently|currenlty|currenly|recently|now)?\s*(?:studying|majoring in|pursuing a degree in|pursuing|enrolled in)\s+([A-Za-z0-9_#+.\-<>()/ ]+?)(?:\s+and\b|\s+with\b|\s+for\b|\s+at\b|[.,;]|$)',
+        rf'\b(?:i am|i\'m)?\s*(?:currently|currenlty|currenly|recently|now)?\s*(?:studying|majoring in|pursuing a degree in|pursuing|enrolled in)\s+([A-Za-z0-9_#+\- ]+?(?:\s*\([^\)]+\))?){clause_delim}',
         masked_text,
         re.IGNORECASE
     )
     for m in study_matches:
-        course = clean_memory_title(m.group(1))
-        if course and len(course) > 1 and course.lower() not in ["a lot", "more", "now"]:
-            candidates.append({
-                "title": course,
-                "fact": f"User is studying {course}.",
-                "category": "Fact",
-                "importance": "High",
-                "confidence": 95
-            })
+        for course_raw in split_compound_items(m.group(1)):
+            course = clean_memory_title(course_raw)
+            if course and len(course) > 1 and course.lower() not in ["a lot", "more", "now"]:
+                candidates.append({
+                    "title": course,
+                    "fact": f"User is studying {course}.",
+                    "category": "Fact",
+                    "importance": "High",
+                    "confidence": 95
+                })
 
     # 1c. Student / Role signals -> Category: Fact
     student_matches = re.finditer(
@@ -1044,25 +1088,26 @@ def extract_memories_from_text(masked_text: str, store: PrivacyStore, config: di
 
     # 1d. Technology & Skill Learning signals -> Category: Skill
     learn_matches = re.finditer(
-        r'\b(?:i am|i\'m)?\s*(?:currently|currenlty|currenly|recently|now)?\s*(?:learning|learning to use|learning how to build|learning how to use|getting started with|mastering|exploring)\s+([A-Za-z0-9_#+.\-<>()/ ]+?)(?:\s+and\b|\s+with\b|\s+for\b|[.,;]|$)',
+        rf'\b(?:i am|i\'m)?\s*(?:currently|currenlty|currenly|recently|now)?\s*(?:learning|learning to use|learning how to build|learning how to use|getting started with|mastering|exploring)\s+([A-Za-z0-9_#+.\-<>()/ ]+?){clause_delim}',
         masked_text,
         re.IGNORECASE
     )
     for m in learn_matches:
-        topic = clean_memory_title(m.group(1))
-        if topic and len(topic) > 1 and topic.lower() not in ["a lot", "more", "now"]:
-            fact_str = f"User is learning {topic}." if "learning" not in topic.lower() else f"User is {topic}."
-            candidates.append({
-                "title": topic,
-                "fact": fact_str,
-                "category": "Skill",
-                "importance": "High",
-                "confidence": 95
-            })
+        for item in split_compound_items(m.group(1)):
+            topic = clean_memory_title(item)
+            if topic and len(topic) > 1 and topic.lower() not in ["a lot", "more", "now"]:
+                fact_str = f"User is learning {topic}." if "learning" not in topic.lower() else f"User is {topic}."
+                candidates.append({
+                    "title": topic,
+                    "fact": fact_str,
+                    "category": "Skill",
+                    "importance": "High",
+                    "confidence": 95
+                })
 
     # 1e. Preference signals -> Category: Preference
     pref_matches = re.finditer(
-        r'\b(?:i prefer|my preference is|i like|prefer working with|prefer using|decided to use|fan of|enjoy using)\s+(?:working with\s+|using\s+)?([A-Za-z0-9_#+.\-<>()/ ]+?)(?:\s+for\s+([A-Za-z0-9_#+.\- ]+?))?(?:\s+and\b|\s+over\b|[.,;]|$)',
+        rf'\b(?:i prefer|my preference is|i like|prefer working with|prefer using|decided to use|fan of|enjoy using)\s+(?:working with\s+|using\s+)?([A-Za-z0-9_#+.\-<>()/ ]+?)(?:\s+for\s+([A-Za-z0-9_#+.\- ]+?))?(?:\s+over\b|{clause_delim})',
         masked_text,
         re.IGNORECASE
     )
@@ -1104,20 +1149,21 @@ def extract_memories_from_text(masked_text: str, store: PrivacyStore, config: di
 
     # 1g. General Skill / Tool signals -> Category: Skill
     skill_matches = re.finditer(
-        r'\b(?:i am using|i\'m using|i use|i am working with|i\'m working with|i work with|i work on|i specialize in|experienced with|skilled in|stack includes|stack features|stack is|proficient in|code in|build with)\s+([A-Za-z0-9_#+.\-<>()/ ]+?)(?:\s+for\b|\s+and\b|\s+in\b|\s+with\b|[.,;]|$)',
+        rf'\b(?:i am using|i\'m using|i use|i am working with|i\'m working with|i work with|i work on|i specialize in|experienced with|skilled in|stack includes|stack features|stack is|proficient in|code in|build with)\s+([A-Za-z0-9_#+.\-<>()/ ]+?)(?:\s+for\b|\s+in\b|\s+with\b|{clause_delim})',
         masked_text,
         re.IGNORECASE
     )
     for m in skill_matches:
-        sk = clean_memory_title(m.group(1))
-        if sk and len(sk) > 1 and sk.lower() not in ["a lot", "that", "it", "more"]:
-            candidates.append({
-                "title": sk,
-                "fact": f"User works with {sk}.",
-                "category": "Skill",
-                "importance": "Medium",
-                "confidence": 92
-            })
+        for item in split_compound_items(m.group(1)):
+            sk = clean_memory_title(item)
+            if sk and len(sk) > 1 and sk.lower() not in ["a lot", "that", "it", "more"]:
+                candidates.append({
+                    "title": sk,
+                    "fact": f"User works with {sk}.",
+                    "category": "Skill",
+                    "importance": "Medium",
+                    "confidence": 92
+                })
 
     # 1h. Fact / Role signals -> Category: Fact
     fact_matches = re.finditer(
@@ -1268,6 +1314,12 @@ def extract_memories_from_text(masked_text: str, store: PrivacyStore, config: di
         restored_title = unmask_dialogue(orig_title, store)
         restored_fact = unmask_dialogue(orig_fact, store)
 
+        # Sanitize any residual unrestored privacy tokens in title or fact
+        if re.search(r'<[A-Za-z_]+_\d+>|\b[a-z_]+_\d+\b', restored_title, re.IGNORECASE):
+            restored_title = re.sub(r'<[A-Za-z_]+_\d+>|\b[a-z_]+_\d+\b', 'User Information', restored_title, flags=re.IGNORECASE)
+        if re.search(r'<[A-Za-z_]+_\d+>|\b[a-z_]+_\d+\b', restored_fact, re.IGNORECASE):
+            restored_fact = re.sub(r'<[A-Za-z_]+_\d+>|\b[a-z_]+_\d+\b', 'user information', restored_fact, flags=re.IGNORECASE)
+
         # Clean restored title
         restored_title = clean_memory_title(restored_title)
 
@@ -1307,36 +1359,35 @@ def sanitize_user_visible_response(text: str, store: PrivacyStore = None) -> str
     if store:
         text = unmask_dialogue(text, store)
 
-    # Clean awkward introductory leaked phrases
-    text = re.sub(r'\b(?:my name is|i am|call me)\s+(?:<Real_Name_\d+>|real_name_\d+)\b', 'you', text, flags=re.IGNORECASE)
-    text = re.sub(r'Regarding\s+(?:i\s+am\s+)?(?:<Real_Name_\d+>|real_name_\d+)\s+to\s+build\s+apps:', 'Regarding building apps:', text, flags=re.IGNORECASE)
-    text = re.sub(r'Regarding\s+(?:my\s+name\s+is\s+)?(?:<Real_Name_\d+>|real_name_\d+)\s+and\s+i\s+am\s+currently\s+studying\s+cse:', 'Regarding your studies in Computer Science and Engineering (CSE):', text, flags=re.IGNORECASE)
+    # Generalize leaked "Regarding <placeholder_phrase>:" fallback headers
+    text = re.sub(r'Regarding\s+[^:\n]*(?:<[A-Za-z_]+_\d+>|[a-z_]+_\d+)[^:\n]*:\s*', 'Regarding your inquiry: ', text, flags=re.IGNORECASE)
 
-    # Real Name placeholders -> clean natural reference or remove
-    text = re.sub(r'<(?:Real_Name|Name)_\d+>', 'you', text, flags=re.IGNORECASE)
-    text = re.sub(r'\breal_name_\d+\b', 'you', text, flags=re.IGNORECASE)
+    # Contextual natural greeting fixes (e.g. "Hello <real_name_10>!" -> "Hello! It's great to connect with you.")
+    text = re.sub(r'\b(?:hello|hi|hey)\s+(?:<[a-z_]+_\d+>|[a-z_]+_\d+)[!.,]?', 'Hello! It\'s great to connect with you.', text, flags=re.IGNORECASE)
+    text = re.sub(r'\b(?:your\s+name\s+is)\s+(?:<[a-z_]+_\d+>|[a-z_]+_\d+)[!.,]?', 'Your name is safely recorded in your private profile.', text, flags=re.IGNORECASE)
+    text = re.sub(r'\b(?:my name is|i am|call me)\s+(?:<[a-z_]+_\d+>|[a-z_]+_\d+)\b', 'you', text, flags=re.IGNORECASE)
 
-    # Email Address placeholders -> 'your email address'
+    # Contextual replacements for distinct types
+    text = re.sub(r'<(?:Real_Name|Name)_\d+>', 'your name', text, flags=re.IGNORECASE)
+    text = re.sub(r'\breal_name_\d+\b', 'your name', text, flags=re.IGNORECASE)
+
     text = re.sub(r'<Email_Address_\d+>', 'your email address', text, flags=re.IGNORECASE)
     text = re.sub(r'\bemail_address_\d+\b', 'your email address', text, flags=re.IGNORECASE)
 
-    # Phone Number placeholders -> 'your phone number'
     text = re.sub(r'<Phone_Number_\d+>', 'your phone number', text, flags=re.IGNORECASE)
     text = re.sub(r'\bphone_number_\d+\b', 'your phone number', text, flags=re.IGNORECASE)
 
-    # Verification Code placeholders -> 'verification code'
-    text = re.sub(r'<Verification_Code_\d+>', 'verification code', text, flags=re.IGNORECASE)
-    text = re.sub(r'\bverification_code_\d+\b', 'verification code', text, flags=re.IGNORECASE)
+    text = re.sub(r'<Verification_Code_\d+>', 'your verification code', text, flags=re.IGNORECASE)
+    text = re.sub(r'\bverification_code_\d+\b', 'your verification code', text, flags=re.IGNORECASE)
 
-    # Detailed Address placeholders -> 'your address'
     text = re.sub(r'<Detailed_Address_\d+>', 'your address', text, flags=re.IGNORECASE)
     text = re.sub(r'\bdetailed_address_\d+\b', 'your address', text, flags=re.IGNORECASE)
 
-    # Any remaining bracketed masks <Type_N>
-    text = re.sub(r'<[A-Za-z_]+_\d+>', '', text)
+    # Universal safety net for any residual bracketed masks
+    text = re.sub(r'<[A-Za-z_]+_\d+>', 'your information', text)
 
-    # Any remaining bare privacy masks
-    text = re.sub(r'\b(?:medical_health|financial_account|id_number|password|key|token|mask)_[0-9]+\b', '', text, flags=re.IGNORECASE)
+    # Universal safety net for any remaining bare privacy masks
+    text = re.sub(r'\b(?:real_name|email_address|phone_number|detailed_address|medical_health|financial_account|id_number|verification_code|password|key|token|mask)_[0-9]+\b', 'your information', text, flags=re.IGNORECASE)
 
     # Clean formatting artifacts
     text = re.sub(r'Regarding\s*:\s*', 'Regarding your query: ', text)

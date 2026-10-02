@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const http = require('http');
 const { app } = require('./server');
+const { deleteOKFConcept } = require('./okf/okfGenerator');
 
 const DATA_DIR = path.resolve(__dirname, 'data');
 const MEMORIES_FILE = path.resolve(DATA_DIR, 'memories.json');
@@ -10,9 +11,24 @@ const BACKUP_MEMORIES_FILE = path.resolve(DATA_DIR, 'memories.json.bak');
 const BACKUP_SETTINGS_FILE = path.resolve(DATA_DIR, 'settings.json.bak');
 
 function cleanTestArtifacts() {
+  const artifacts = [
+    { title: 'Scala', category: 'Skill' },
+    { title: 'Rust', category: 'Skill' },
+    { title: 'Go', category: 'Skill' },
+    { title: 'Flutter mobile app', category: 'Project' }
+  ];
+  artifacts.forEach(art => {
+    try { deleteOKFConcept(art); } catch (e) {}
+  });
+
+  const subdirs = ['skills', 'preferences', 'projects', 'facts', 'general', 'memories'];
   ['scala', 'rust', 'go', 'flutter-mobile-app'].forEach(slug => {
-    const p = path.resolve(__dirname, 'okf', 'user-memory', 'memories', `${slug}.md`);
-    if (fs.existsSync(p)) fs.unlinkSync(p);
+    subdirs.forEach(dir => {
+      const p = path.resolve(__dirname, 'okf', 'user-memory', dir, `${slug}.md`);
+      if (fs.existsSync(p)) {
+        try { fs.unlinkSync(p); } catch (e) {}
+      }
+    });
   });
   if (fs.existsSync(MEMORIES_FILE)) {
     try {
@@ -36,11 +52,11 @@ function backupData() {
 function restoreData() {
   if (fs.existsSync(BACKUP_MEMORIES_FILE)) {
     fs.copyFileSync(BACKUP_MEMORIES_FILE, MEMORIES_FILE);
-    fs.unlinkSync(BACKUP_MEMORIES_FILE);
+    try { fs.unlinkSync(BACKUP_MEMORIES_FILE); } catch (e) {}
   }
   if (fs.existsSync(BACKUP_SETTINGS_FILE)) {
     fs.copyFileSync(BACKUP_SETTINGS_FILE, SETTINGS_FILE);
-    fs.unlinkSync(BACKUP_SETTINGS_FILE);
+    try { fs.unlinkSync(BACKUP_SETTINGS_FILE); } catch (e) {}
   }
   cleanTestArtifacts();
 }
@@ -138,15 +154,15 @@ async function runTask15Tests() {
     const updatedMemories = JSON.parse(fs.readFileSync(MEMORIES_FILE, 'utf8'));
     assert(updatedMemories.length === initialCount + 1, `memories.json count increased from ${initialCount} to ${updatedMemories.length}`);
 
-    const scalaOkfFile = path.resolve(__dirname, 'okf', 'user-memory', 'memories', 'scala.md');
-    assert(fs.existsSync(scalaOkfFile), 'Corresponding OKF Markdown document generated on disk: scala.md');
+    const scalaOkfFile = path.resolve(__dirname, 'okf', 'user-memory', 'skills', 'scala.md');
+    assert(fs.existsSync(scalaOkfFile), 'Corresponding OKF Markdown document generated on disk: skills/scala.md');
 
     const indexFile = path.resolve(__dirname, 'okf', 'user-memory', 'index.md');
     let indexHasScala = false;
     if (fs.existsSync(indexFile)) {
-      indexHasScala = fs.readFileSync(indexFile, 'utf8').includes('memories/scala.md');
+      indexHasScala = fs.readFileSync(indexFile, 'utf8').includes('skills/scala.md');
     }
-    assert(indexHasScala, 'OKF index.md contains entry for new memory scala.md');
+    assert(indexHasScala, 'OKF index.md contains entry for new memory skills/scala.md');
 
     // 4. Explainable Memory Retrieval
     console.log('\n[Test 15.4] Explainable Memory Retrieval Verification');
@@ -170,7 +186,7 @@ async function runTask15Tests() {
     const countAfterAutoSaveOff = JSON.parse(fs.readFileSync(MEMORIES_FILE, 'utf8')).length;
     assert(countAfterAutoSaveOff === countBeforeAutoSaveOff, 'memories.json count remains unchanged when Auto-Save is OFF');
 
-    const goOkfFile = path.resolve(__dirname, 'okf', 'user-memory', 'memories', 'go.md');
+    const goOkfFile = path.resolve(__dirname, 'okf', 'user-memory', 'skills', 'go.md');
     assert(!fs.existsSync(goOkfFile), 'No OKF Markdown document created when Auto-Save is OFF');
 
     // 7. Memory Enabled OFF Test

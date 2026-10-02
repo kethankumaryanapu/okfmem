@@ -2,6 +2,7 @@ const { execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
+const { deleteOKFConcept } = require('./okf/okfGenerator');
 
 console.log("=== Task 17 Fully Reliable and Conversational Chatbot Test Suite ===");
 
@@ -12,11 +13,23 @@ const BACKUP_MEMORIES_FILE = path.resolve(DATA_DIR, 'memories.json.bak_task17');
 const BACKUP_SETTINGS_FILE = path.resolve(DATA_DIR, 'settings.json.bak_task17');
 
 function cleanTestArtifacts() {
+  const artifacts = [
+    { title: 'Rust Language', category: 'Skill' },
+    { title: 'Rust language for systems programming', category: 'Skill' },
+    { title: 'Rust systems', category: 'Skill' }
+  ];
+  artifacts.forEach(art => {
+    try { deleteOKFConcept(art); } catch (e) {}
+  });
+
+  const subdirs = ['skills', 'preferences', 'projects', 'facts', 'general', 'memories'];
   ['rust-language', 'rust-language-for-systems-programming', 'rust-systems'].forEach(slug => {
-    const p = path.resolve(__dirname, 'okf', 'user-memory', 'memories', `${slug}.md`);
-    if (fs.existsSync(p)) {
-      try { fs.unlinkSync(p); } catch (e) {}
-    }
+    subdirs.forEach(dir => {
+      const p = path.resolve(__dirname, 'okf', 'user-memory', dir, `${slug}.md`);
+      if (fs.existsSync(p)) {
+        try { fs.unlinkSync(p); } catch (e) {}
+      }
+    });
   });
   if (fs.existsSync(MEMORIES_FILE)) {
     try {

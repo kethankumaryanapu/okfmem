@@ -43,8 +43,16 @@ function loadEnvFile() {
 }
 loadEnvFile();
 
+app.use(express.static(path.resolve(__dirname, '..')));
+
 const AdmZip = require('adm-zip');
-const { generateOKFConcept } = require('./okf/okfGenerator');
+const {
+  generateOKFConcept,
+  deleteOKFConcept,
+  migrateAllMemories,
+  getOKFBundleTree,
+  readOKFDocument
+} = require('./okf/okfGenerator');
 
 const DATA_DIR = path.resolve(__dirname, 'data');
 const MEMORIES_FILE = path.resolve(DATA_DIR, 'memories.json');
@@ -153,9 +161,16 @@ function saveMemories(memList) {
 
 let memories = loadMemories();
 
+// Synchronize and migrate active memories into OKF v0.2 bundle structure
+try {
+  migrateAllMemories(memories);
+} catch (migErr) {
+  console.error('OKF bundle startup sync error:', migErr.message);
+}
+
 app.get('/api/health', (req, res) => {
   res.json({
-    status: 'OK',
+    status: 'ok',
     message: 'OKFMem backend is running'
   });
 });
@@ -373,32 +388,7 @@ app.put('/api/memories/:id', (req, res) => {
 });
 
 
-function deleteOKFConcept(memory) {
-  try {
-    if (!memory) return;
-    const title = memory.title || "Untitled Memory";
-    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'memory';
-    const relPath = `memories/${slug}.md`;
-    const memoriesDir = path.resolve(__dirname, 'okf', 'user-memory', 'memories');
-    const filePath = path.resolve(memoriesDir, `${slug}.md`);
 
-    if (filePath.startsWith(memoriesDir) && fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
-
-    const indexPath = path.resolve(__dirname, 'okf', 'user-memory', 'index.md');
-    if (fs.existsSync(indexPath)) {
-      const indexContent = fs.readFileSync(indexPath, 'utf8');
-      const targetPattern = new RegExp(`^\\* \\[.*?\\]\\(${relPath.replace('.', '\\.')}\\).*$\\n?`, 'm');
-      if (targetPattern.test(indexContent)) {
-        const updatedContent = indexContent.replace(targetPattern, '');
-        fs.writeFileSync(indexPath, updatedContent, 'utf8');
-      }
-    }
-  } catch (err) {
-    console.error(`Failed to delete OKF concept for memory ${memory.id}:`, err);
-  }
-}
 
 app.delete('/api/memories/:id', (req, res) => {
   try {
@@ -452,18 +442,76 @@ app.post('/api/okf/generate', (req, res) => {
   }
 });
 
+app.get('/api/okf/tree', (req, res) => {
+  try {
+    const tree = getOKFBundleTree();
+    res.json({
+      success: true,
+      bundle: tree
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.get('/api/okf/file', (req, res) => {
+  try {
+    const requestedPath = req.query.path;
+    if (!requestedPath) {
+      return res.status(400).json({ success: false, error: 'Path query parameter is required' });
+    }
+
+    const result = readOKFDocument(requestedPath);
+    if (!result.exists) {
+      return res.status(404).json({ success: false, error: result.error || 'Document not found' });
+    }
+
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 app.get('/api/okf/memories/:filename', (req, res) => {
   try {
     const rawFilename = req.params.filename;
     const safeFilename = path.basename(rawFilename);
-    const memoriesDir = path.resolve(__dirname, 'okf', 'user-memory', 'memories');
-    const filePath = path.resolve(memoriesDir, safeFilename);
+    const userMemoryDir = path.resolve(__dirname, 'okf', 'user-memory');
 
-    if (!filePath.startsWith(memoriesDir) || !fs.existsSync(filePath)) {
+    // Search in legacy memories folder first, then across all category subdirectories
+    const searchDirs = [
+      path.resolve(userMemoryDir, 'memories'),
+      path.resolve(userMemoryDir, 'skills'),
+      path.resolve(userMemoryDir, 'preferences'),
+      path.resolve(userMemoryDir, 'projects'),
+      path.resolve(userMemoryDir, 'facts'),
+      path.resolve(userMemoryDir, 'general'),
+      userMemoryDir
+    ];
+
+    let foundPath = null;
+    for (const dir of searchDirs) {
+      const candidate = path.resolve(dir, safeFilename);
+      if (candidate.startsWith(userMemoryDir) && fs.existsSync(candidate)) {
+        foundPath = candidate;
+        break;
+      }
+    }
+
+    if (!foundPath) {
       return res.status(404).json({ success: false, error: 'OKF memory document not found' });
     }
 
-    const content = fs.readFileSync(filePath, 'utf8');
+    const content = fs.readFileSync(foundPath, 'utf8');
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.send(content);
   } catch (error) {
@@ -480,6 +528,7 @@ app.get('/api/okf/export', (req, res) => {
       return res.status(404).json({ success: false, error: 'OKF bundle directory not found' });
     }
 
+    // Export entire OKF v0.2 bundle containing index.md, log.md, and all category folders
     zip.addLocalFolder(targetDir, 'user-memory');
     const buffer = zip.toBuffer();
 
@@ -555,6 +604,9 @@ function isFuzzyDuplicate(cand, existingMem) {
 
   // 1. Exact title match (same category) or exact fact match
   if ((candCat === mCat && normTitle && mTitle === normTitle) || (normFact && mFact === normFact)) {
+    if (normTitle === 'user name' || normTitle === 'real name') {
+      return normFact === mFact;
+    }
     return true;
   }
 
@@ -624,23 +676,31 @@ function updateMemoryInteraction(mem) {
 function sanitizeResponsePlaceholders(text) {
   if (!text || typeof text !== 'string') return text || '';
   let cleaned = text
+    .replace(/Regarding\s+[^:\n]*(?:<[A-Za-z_]+_\d+>|[a-z_]+_\d+)[^:\n]*:\s*/gi, 'Regarding your inquiry: ')
+    .replace(/\b(?:hello|hi|hey)\s+(?:<[a-z_]+_\d+>|[a-z_]+_\d+)[!.,]?/gi, "Hello! It's great to connect with you.")
+    .replace(/\b(?:your\s+name\s+is)\s+(?:<[a-z_]+_\d+>|[a-z_]+_\d+)[!.,]?/gi, 'Your name is safely recorded in your private profile.')
+    .replace(/\b(?:my name is|i am|call me)\s+(?:<[a-z_]+_\d+>|[a-z_]+_\d+)\b/gi, 'you')
     .replace(/<[A-Za-z_]+_\d+>/gi, (match) => {
-      if (/real_name|name/i.test(match)) return 'you';
+      if (/real_name|name/i.test(match)) return 'your name';
       if (/email/i.test(match)) return 'your email address';
       if (/phone/i.test(match)) return 'your phone number';
-      if (/verification|otp/i.test(match)) return 'verification code';
+      if (/verification|otp/i.test(match)) return 'your verification code';
       if (/address/i.test(match)) return 'your address';
-      return '';
+      return 'your information';
     })
     .replace(/\b(?:real_name|email_address|phone_number|detailed_address|medical_health|financial_account|id_number|verification_code|password|key|token|mask)_[0-9]+\b/gi, (match) => {
-      if (/real_name/i.test(match)) return 'you';
+      if (/real_name/i.test(match)) return 'your name';
       if (/email/i.test(match)) return 'your email address';
       if (/phone/i.test(match)) return 'your phone number';
-      if (/verification|otp/i.test(match)) return 'verification code';
+      if (/verification|otp/i.test(match)) return 'your verification code';
       if (/address/i.test(match)) return 'your address';
-      return '';
+      return 'your information';
     });
-  return cleaned.replace(/[ \t]{2,}/g, ' ').replace(/\s+([.,!?:;])/g, '$1').trim();
+  return cleaned
+    .replace(/Regarding\s*:\s*/g, 'Regarding your query: ')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\s+([.,!?:;])/g, '$1')
+    .trim();
 }
 
 app.post('/api/chat', async (req, res) => {
@@ -723,9 +783,13 @@ app.post('/api/chat', async (req, res) => {
       }
     }
 
+    if (memoriesUpdated) {
+      saveMemories(memories);
+    }
+
     const safeResponse = sanitizeResponsePlaceholders(result.response);
 
-    // Send response immediately to unblock HTTP client
+    // Send response to client
     res.json({
       success: true,
       response: safeResponse,
@@ -734,22 +798,19 @@ app.post('/api/chat', async (req, res) => {
       provider: result.provider || 'offline'
     });
 
-    // Asynchronously persist memories and generate/update OKF concept files
-    if (memoriesUpdated || okfQueue.length > 0) {
+    // Synchronize OKF concept files for modified/created memories
+    if (okfQueue.length > 0) {
       setImmediate(() => {
         try {
-          if (memoriesUpdated) {
-            saveMemories(memories);
-          }
           for (const mem of okfQueue) {
             try {
               generateOKFConcept(mem);
             } catch (okfErr) {
-              console.error(`Failed to generate OKF concept for memory ${mem.id}:`, okfErr);
+              console.error(`Failed to generate OKF concept for memory ${mem.id}:`, okfErr.message);
             }
           }
         } catch (persistErr) {
-          console.error('Async memory/OKF persistence error:', persistErr);
+          console.error('Async OKF persistence error:', persistErr.message);
         }
       });
     }
@@ -788,13 +849,27 @@ app.post('/api/privacy/test', async (req, res) => {
 });
 
 if (require.main === module) {
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, (err) => {
+    if (err) {
+      console.error(`Failed to start OKFMem backend on port ${PORT}:`, err.message);
+      process.exit(1);
+    }
     console.log(`OKFMem backend running at http://localhost:${PORT}`);
+  });
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`Error: Port ${PORT} is already in use by another process.`);
+    } else {
+      console.error(`Server error on port ${PORT}:`, err);
+    }
+    process.exit(1);
   });
 }
 
 module.exports = {
   app,
   isFuzzyDuplicate,
-  updateMemoryInteraction
+  updateMemoryInteraction,
+  sanitizeResponsePlaceholders
 };

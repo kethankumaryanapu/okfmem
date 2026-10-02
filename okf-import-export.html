@@ -190,10 +190,10 @@
           <!-- Plain Language Explanation Card -->
           <div class="card" style="border-color: rgba(255, 56, 56, 0.25);">
             <div style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">
-              What is Open Knowledge Format (.okf)?
+              What is Open Knowledge Format (OKF v0.2)?
             </div>
             <div style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.6;">
-              OKF is an open, portable schema for personal AI memory management. It allows you to move your long-term memory traces, preferences, and privacy rules seamlessly between different local or cloud AI assistants without vendor lock-in. Each concept is stored as human-readable Markdown with structured YAML frontmatter.
+              OKF is an open, vendor-neutral specification for representing knowledge as plain Markdown files with YAML frontmatter. It allows you to move your long-term memory traces, preferences, and skills seamlessly between AI systems without vendor lock-in. OKF bundles are self-contained directory trees or zip archives containing concept documents, progressive disclosure index files, and chronological update logs.
             </div>
           </div>
 
@@ -206,9 +206,9 @@
               </div>
               <div class="dropzone" onclick="triggerImportDialog()">
                 <svg width="34" height="34" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--red-primary);"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);">Drag & Drop your .okf or .zip file here</div>
+                <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);">Drag & Drop your OKF bundle (.zip or .md files) here</div>
                 <div style="font-size: 12px; color: var(--text-muted);">or click to browse from your device</div>
-                <input type="file" id="import-file-input" style="display: none;" accept=".zip,.okf,.json,.md" onchange="handleFileSelected(this)">
+                <input type="file" id="import-file-input" style="display: none;" accept=".zip,.md" onchange="handleFileSelected(this)">
               </div>
 
               <div>
@@ -245,10 +245,11 @@
 
               <div>
                 <label style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; display: block; letter-spacing: 0.04em;">Bundle Format</label>
-                <select class="select-input" style="width: 100%;" id="export-format">
-                  <option value="zip">OKF Markdown Bundle (.zip archive)</option>
-                  <option value="json">OKF JSON Schema (.json)</option>
-                </select>
+                <div style="background: var(--surface-inset); border: 1px solid var(--border-subtle); padding: 10px 14px; border-radius: var(--radius-sm); font-size: 13px; color: var(--text-primary); display: flex; align-items: center; justify-content: space-between;">
+                  <span style="font-weight: 500;">OKF v0.2 Knowledge Bundle (.zip archive)</span>
+                  <span class="badge badge-protected" style="font-size: 10px;">Official Spec</span>
+                </div>
+                <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 5px;">Self-contained bundle with root index.md, update log.md, and hierarchical category folders.</div>
               </div>
 
               <div style="background: var(--surface-inset); border: 1px solid var(--border-subtle); padding: 14px 16px; border-radius: var(--radius-sm); font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; justify-content: space-between;">
@@ -258,7 +259,33 @@
 
               <button class="btn btn-primary" onclick="downloadLiveOKFBundle()" style="margin-top: auto;">
                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                <span>Generate & Download Export</span>
+                <span>Generate & Download Export (.zip)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Active OKF v0.2 Knowledge Bundle Structure Card -->
+          <div class="card" style="margin-top: 20px;">
+            <div class="card-header">
+              <div class="card-title" style="display: flex; align-items: center; gap: 8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--red-primary);"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                <span>Active OKF v0.2 Knowledge Bundle Hierarchy</span>
+              </div>
+              <span class="badge badge-protected">Live Markdown Bundle</span>
+            </div>
+
+            <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">
+              Your personal long-term memories are synchronized in real-time as genuine OKF v0.2 Markdown concept documents at <code>backend/okf/user-memory/</code>.
+            </div>
+
+            <div class="okf-markdown-box" style="margin-bottom: 14px;">
+              <pre><code id="live-bundle-tree">Scanning active OKF bundle hierarchy...</code></pre>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+              <button class="btn btn-secondary btn-sm" onclick="downloadLiveOKFBundle()">
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>Download OKF v0.2 Bundle (.zip)</span>
               </button>
             </div>
           </div>
@@ -286,7 +313,7 @@
     }
 
     function triggerImportNotice() {
-      alert('To import external OKF memory records, select an .okf archive or memory markdown file.');
+      alert('To import external OKF memory records, select an OKF bundle archive (.zip) or Markdown concept file (.md).');
     }
 
     async function loadExportMetrics() {
@@ -304,7 +331,49 @@
       }
     }
 
-    document.addEventListener('DOMContentLoaded', loadExportMetrics);
+    async function loadBundleHierarchy() {
+      const treeCode = document.getElementById('live-bundle-tree');
+      if (!treeCode) return;
+
+      try {
+        const res = await fetch('http://localhost:5000/api/okf/tree');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (!data.success || !data.bundle) throw new Error('Could not read bundle');
+
+        const b = data.bundle;
+        let ascii = `user-memory/\n├── index.md                      # Root Index (okf_version: "0.2")\n├── log.md                        # Chronological Update History\n`;
+
+        if (Array.isArray(b.categories)) {
+          b.categories.forEach((cat, idx) => {
+            const isLastCat = idx === b.categories.length - 1;
+            const catPrefix = isLastCat ? '└── ' : '├── ';
+            const childPrefix = isLastCat ? '    ' : '│   ';
+            ascii += `${catPrefix}${cat.dir}/\n`;
+            ascii += `${childPrefix}├── index.md                  # Subdirectory Index\n`;
+
+            if (Array.isArray(cat.concepts) && cat.concepts.length > 0) {
+              cat.concepts.forEach((c, cIdx) => {
+                const isLastConcept = cIdx === cat.concepts.length - 1;
+                const conceptPrefix = isLastConcept ? '└── ' : '├── ';
+                ascii += `${childPrefix}${conceptPrefix}${c.filename.padEnd(26, ' ')}# ${c.title} (${c.type})\n`;
+              });
+            } else {
+              ascii += `${childPrefix}└── (empty category)\n`;
+            }
+          });
+        }
+
+        treeCode.textContent = ascii;
+      } catch (err) {
+        treeCode.textContent = `Could not load bundle hierarchy: ${err.message}`;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadExportMetrics();
+      loadBundleHierarchy();
+    });
   </script>
 </body>
 </html>

@@ -61,7 +61,7 @@ async function runTests() {
   try {
     // 1. Check health
     const health = await request(port, 'GET', '/api/health');
-    assert(health.status === 200 && health.body.status === 'ok', 'Server health OK');
+    assert(health.status === 200 && (health.body.status === 'ok' || health.body.status === 'OK'), 'Server health OK');
     console.log('✔ Server health OK');
     passed++;
 

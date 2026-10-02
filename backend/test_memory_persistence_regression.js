@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
+const { deleteOKFConcept } = require('./okf/okfGenerator');
 
 const DATA_DIR = path.resolve(__dirname, 'data');
 const MEMORIES_FILE = path.resolve(DATA_DIR, 'memories.json');
@@ -9,9 +10,23 @@ const BACKUP_MEMORIES_FILE = path.resolve(DATA_DIR, 'memories.json.bak');
 const BACKUP_SETTINGS_FILE = path.resolve(DATA_DIR, 'settings.json.bak');
 
 function cleanTestArtifacts() {
+  const artifacts = [
+    { title: 'Elixir', category: 'Skill' },
+    { title: 'Haskell', category: 'Skill' },
+    { title: 'Clojure', category: 'Skill' }
+  ];
+  artifacts.forEach(art => {
+    try { deleteOKFConcept(art); } catch (e) {}
+  });
+
+  const subdirs = ['skills', 'preferences', 'projects', 'facts', 'general', 'memories'];
   ['elixir', 'haskell', 'clojure'].forEach(slug => {
-    const p = path.resolve(__dirname, 'okf', 'user-memory', 'memories', `${slug}.md`);
-    if (fs.existsSync(p)) fs.unlinkSync(p);
+    subdirs.forEach(dir => {
+      const p = path.resolve(__dirname, 'okf', 'user-memory', dir, `${slug}.md`);
+      if (fs.existsSync(p)) {
+        try { fs.unlinkSync(p); } catch (e) {}
+      }
+    });
   });
   if (fs.existsSync(MEMORIES_FILE)) {
     try {
@@ -35,11 +50,11 @@ function backupData() {
 function restoreData() {
   if (fs.existsSync(BACKUP_MEMORIES_FILE)) {
     fs.copyFileSync(BACKUP_MEMORIES_FILE, MEMORIES_FILE);
-    fs.unlinkSync(BACKUP_MEMORIES_FILE);
+    try { fs.unlinkSync(BACKUP_MEMORIES_FILE); } catch (e) {}
   }
   if (fs.existsSync(BACKUP_SETTINGS_FILE)) {
     fs.copyFileSync(BACKUP_SETTINGS_FILE, SETTINGS_FILE);
-    fs.unlinkSync(BACKUP_SETTINGS_FILE);
+    try { fs.unlinkSync(BACKUP_SETTINGS_FILE); } catch (e) {}
   }
   cleanTestArtifacts();
 }
@@ -134,8 +149,8 @@ async function runRegressionTests() {
     const elixirMem = updatedMemoriesA.find(m => (m.title || '').toLowerCase().includes('elixir'));
     assert(!!elixirMem, 'memories.json contains newly saved Elixir memory');
 
-    const elixirOkfFile = path.resolve(__dirname, 'okf', 'user-memory', 'memories', 'elixir.md');
-    assert(fs.existsSync(elixirOkfFile), 'Corresponding OKF Markdown file created on disk');
+    const elixirOkfFile = path.resolve(__dirname, 'okf', 'user-memory', 'skills', 'elixir.md');
+    assert(fs.existsSync(elixirOkfFile), 'Corresponding OKF Markdown file created on disk: skills/elixir.md');
 
     const apiMemResA = await request(port, 'GET', '/api/memories');
     assert(apiMemResA.status === 200 && apiMemResA.body.memories.length === updatedMemoriesA.length, 'GET /api/memories returns updated memory count');
@@ -160,7 +175,7 @@ async function runRegressionTests() {
     const countAfterB = JSON.parse(fs.readFileSync(MEMORIES_FILE, 'utf8')).length;
     assert(countAfterB === countBeforeB, `memories.json count remains unchanged when Auto-Save is OFF (was ${countBeforeB}, now ${countAfterB})`);
 
-    const haskellOkfFile = path.resolve(__dirname, 'okf', 'user-memory', 'memories', 'haskell.md');
+    const haskellOkfFile = path.resolve(__dirname, 'okf', 'user-memory', 'skills', 'haskell.md');
     assert(!fs.existsSync(haskellOkfFile), 'OKF document is NOT created when Auto-Save is OFF');
 
     // ---------------------------------------------------------

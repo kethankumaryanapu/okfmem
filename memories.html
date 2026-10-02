@@ -393,10 +393,10 @@
         <!-- Live OKF Spec Preview -->
         <div class="mc-detail-card">
           <div class="mc-detail-label">
-            <span>Open Knowledge Format (OKF) Spec</span>
-            <button class="btn btn-ghost btn-xs" onclick="copyOKFSpec()" title="Copy Markdown to Clipboard">Copy OKF</button>
+            <span>Open Knowledge Format (OKF v0.2)</span>
+            <button class="btn btn-ghost btn-xs" onclick="copyOKFSpec()" title="Copy Markdown to Clipboard">Copy Markdown</button>
           </div>
-          <div class="okf-json-box" style="margin-top: 6px;">
+          <div class="okf-markdown-box" style="margin-top: 6px;">
             <pre><code id="detailOkfSpec">Loading OKF document...</code></pre>
           </div>
         </div>
@@ -1022,25 +1022,53 @@
       document.getElementById('detailCreated').textContent = m.created || '---';
       document.getElementById('detailSource').textContent = m.source || 'Conversation';
 
-      // Real OKF Spec Document Preview
+      // Real OKF v0.2 Spec Document Preview
       const slug = (m.title || 'memory').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      const okfSpecText = `---
+      const catDirs = { Skill: 'skills', Preference: 'preferences', Project: 'projects', Fact: 'facts', General: 'general' };
+      const catDir = catDirs[m.category] || 'general';
+      const conceptBundlePath = `${catDir}/${slug}.md`;
+
+      const codeEl = document.getElementById('detailOkfSpec');
+      if (codeEl) {
+        codeEl.textContent = 'Loading OKF v0.2 concept document...';
+        fetch(`http://localhost:5000/api/okf/file?path=${encodeURIComponent(conceptBundlePath)}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.success && data.content) {
+              codeEl.textContent = data.content;
+            } else {
+              throw new Error('Fallback to local OKF format');
+            }
+          })
+          .catch(() => {
+            const okfSpecText = `---
 type: User ${m.category || 'General'}
 title: ${m.title || 'Untitled Memory'}
 description: ${m.fact || ''}
-importance: ${m.importance || 'Medium'}
-privacy_tier: ${m.privacy || 'Protected'}
-confidence: ${m.confidence || 95}%
 tags:
   - ${slug}
   - ${(m.category || 'general').toLowerCase()}
+generated:
+  by: ${m.source === 'Manual' ? 'human:user' : 'okfmem/gemini-2.5-flash'}
+  at: ${new Date().toISOString()}
+status: stable
+importance: ${m.importance || 'Medium'}
+privacy_tier: ${m.privacy || 'Protected'}
+confidence: ${m.confidence || 95}
 ---
 
 # ${m.title || 'Untitled Memory'}
 
-${m.fact || ''}`;
+${m.fact || ''}
 
-      document.getElementById('detailOkfSpec').textContent = okfSpecText;
+## Details
+- **Category**: ${m.category || 'General'}
+- **Importance**: ${m.importance || 'Medium'}
+- **Privacy Tier**: ${m.privacy || 'Protected'}
+- **Source**: ${m.source || 'Conversation'}`;
+            codeEl.textContent = okfSpecText;
+          });
+      }
 
       document.getElementById('drawerOverlay').classList.add('open');
       document.getElementById('detailDrawer').classList.add('open');
@@ -1056,7 +1084,7 @@ ${m.fact || ''}`;
       const text = document.getElementById('detailOkfSpec')?.textContent;
       if (text && navigator.clipboard) {
         navigator.clipboard.writeText(text).then(() => {
-          showToast('OKF specification copied to clipboard');
+          showToast('OKF v0.2 concept markdown copied to clipboard');
         });
       }
     }

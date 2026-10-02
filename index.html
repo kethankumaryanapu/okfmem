@@ -364,32 +364,96 @@
     </div>
   </div>
 
-  <!-- OKF Representation Viewer Modal -->
+  <!-- OKF v0.2 Knowledge Bundle Explorer Modal -->
   <div class="modal-backdrop" id="okf-modal" onclick="closeOKFModal(event)">
-    <div class="modal-card modal-card-lg" onclick="event.stopPropagation()">
+    <div class="modal-card modal-card-lg" style="max-width: 960px; width: 95vw;" onclick="event.stopPropagation()">
       <div class="modal-card-header">
-        <div class="modal-card-title">
-          <span>[ Open Knowledge Format (OKF) Spec ]</span>
+        <div class="modal-card-title" style="display: flex; align-items: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--red-primary);"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+          <span>Open Knowledge Format (OKF v0.2) Bundle Explorer</span>
+          <span class="badge badge-protected" style="font-size: 10.5px;">Official v0.2 Spec</span>
         </div>
         <button class="btn btn-icon" onclick="closeOKFModal()" style="padding: 4px;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
 
-      <div class="modal-card-body">
-        <div class="okf-notice-banner">
+      <div class="modal-card-body" style="padding: 16px;">
+        <div class="okf-notice-banner" style="margin-bottom: 12px;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--amber-primary); flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-          <span>Open Knowledge Format Specification 0.1 document synchronized with OKFMem backend storage.</span>
+          <span>Self-contained hierarchical knowledge bundle: Markdown concepts, YAML frontmatter, index listings, and update log.</span>
         </div>
-        <div class="okf-json-box">
-          <pre><code id="okf-json-code">Loading OKF document representation...</code></pre>
+
+        <div class="okf-explorer-container">
+          <!-- Left: Bundle Directory Tree -->
+          <div class="okf-tree-pane" id="okf-tree-pane">
+            <div class="okf-tree-header">
+              <span>OKF Bundle Structure</span>
+              <button class="btn btn-ghost btn-xs" onclick="refreshOKFBundleTree()" title="Refresh Bundle Tree">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+              </button>
+            </div>
+            <div id="okf-tree-content">Loading bundle hierarchy...</div>
+          </div>
+
+          <!-- Right: Document Inspector -->
+          <div class="okf-inspector-pane">
+            <div class="okf-inspector-header">
+              <div class="okf-path-badge" id="okf-inspector-path">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                <span id="okf-active-filepath">skills/python.md</span>
+              </div>
+
+              <div class="okf-view-tabs">
+                <button class="okf-tab-btn active" id="okf-tab-btn-formatted" onclick="switchOKFViewTab('formatted')">Concept View</button>
+                <button class="okf-tab-btn" id="okf-tab-btn-frontmatter" onclick="switchOKFViewTab('frontmatter')">YAML Frontmatter</button>
+                <button class="okf-tab-btn" id="okf-tab-btn-raw" onclick="switchOKFViewTab('raw')">Raw Markdown</button>
+              </div>
+            </div>
+
+            <div class="okf-inspector-body">
+              <!-- View 1: Formatted Concept View -->
+              <div id="okf-view-formatted">
+                <div class="okf-meta-pills" id="okf-concept-pills">
+                  <!-- Injected dynamically -->
+                </div>
+                <h3 class="okf-doc-title" id="okf-concept-title">Concept Title</h3>
+                <div class="okf-doc-desc" id="okf-concept-desc">Concept description</div>
+                <div id="okf-concept-body-rendered" style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; white-space: pre-wrap;"></div>
+
+                <div class="okf-relations-card" id="okf-relations-card" style="display: none;">
+                  <div class="okf-relations-title">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                    <span>Related Concepts (OKF Links)</span>
+                  </div>
+                  <ul class="okf-relations-list" id="okf-relations-list">
+                  </ul>
+                </div>
+              </div>
+
+              <!-- View 2: YAML Frontmatter View -->
+              <div id="okf-view-frontmatter" style="display: none;">
+                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">Standardized YAML frontmatter block delimited by <code>---</code>:</div>
+                <pre class="okf-frontmatter-block"><code id="okf-frontmatter-code"></code></pre>
+              </div>
+
+              <!-- View 3: Raw Markdown View -->
+              <div id="okf-view-raw" style="display: none;">
+                <pre class="okf-frontmatter-block" style="max-height: 380px;"><code id="okf-raw-code"></code></pre>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       <div class="modal-card-footer">
-        <button class="btn btn-ghost btn-sm" onclick="copyOKFJson()">
+        <button class="btn btn-ghost btn-sm" onclick="copyActiveOKFDocument()">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-          <span>Copy OKF</span>
+          <span>Copy Concept Document</span>
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="exportOKFBundle()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span>Download Bundle (.zip)</span>
         </button>
         <button class="btn btn-secondary btn-sm" onclick="closeOKFModal()">Close</button>
       </div>

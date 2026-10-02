@@ -1,7 +1,7 @@
 const { execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
-const { generateOKFConcept } = require('./okf/okfGenerator');
+const { generateOKFConcept, deleteOKFConcept } = require('./okf/okfGenerator');
 
 console.log("=== Task 10 Complete OKFMem Integration Test ===");
 
@@ -102,14 +102,14 @@ async function runTests() {
       throw new Error("Test 3 failed: OKF index.md file does not exist.");
     }
     const indexContentBefore = fs.readFileSync(indexPath, 'utf8');
-    if (!indexContentBefore.includes("(memories/vue-js-framework.md)")) {
+    if (!indexContentBefore.includes("(skills/vue-js-framework.md)")) {
       throw new Error("Test 3 failed: Generated OKF concept link missing from index.md.");
     }
 
     // Verify deduplication on re-generation
     generateOKFConcept(sampleMemory);
     const indexContentAfter = fs.readFileSync(indexPath, 'utf8');
-    const occurrences = (indexContentAfter.match(/\(memories\/vue-js-framework\.md\)/g) || []).length;
+    const occurrences = (indexContentAfter.match(/\(skills\/vue-js-framework\.md\)/g) || []).length;
     if (occurrences !== 1) {
       throw new Error(`Test 3 failed: Duplicate link entries found in index.md (count: ${occurrences})`);
     }
@@ -129,6 +129,10 @@ async function runTests() {
   } catch (err) {
     console.error("\n❌ TEST FAILED:", err.message);
     process.exit(1);
+  } finally {
+    try {
+      deleteOKFConcept({ title: "Vue.js Framework", category: "Skill" });
+    } catch (_) {}
   }
 }
 

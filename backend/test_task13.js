@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const { execFile } = require('child_process');
-const { generateOKFConcept } = require('./okf/okfGenerator');
+const { generateOKFConcept, deleteOKFConcept } = require('./okf/okfGenerator');
 
 console.log("=== Task 13 Enhanced Pipeline & Optimization Test Suite ===");
 
@@ -17,6 +17,9 @@ if (fs.existsSync(MEMORIES_FILE)) {
 }
 
 function restoreMemoriesBackup() {
+  try {
+    deleteOKFConcept({ title: "Svelte Framework", category: "Skill" });
+  } catch (_) {}
   if (backupData !== null && fs.existsSync(BACKUP_FILE)) {
     fs.writeFileSync(MEMORIES_FILE, backupData, 'utf8');
     fs.unlinkSync(BACKUP_FILE);
@@ -132,7 +135,7 @@ async function runTask13Tests() {
       throw new Error("Test 13.3 failed: index.md was not updated with the new memory fact.");
     }
 
-    const svelteOccurrences = (indexContent2.match(/\(memories\/svelte-framework\.md\)/g) || []).length;
+    const svelteOccurrences = (indexContent2.match(/\(skills\/svelte-framework\.md\)/g) || []).length;
     if (svelteOccurrences !== 1) {
       throw new Error(`Test 13.3 failed: Expected 1 occurrence of Svelte link in index.md, found ${svelteOccurrences}`);
     }
