@@ -5,7 +5,7 @@ OKFMem is a privacy-preserving personal memory manager and AI assistant interfac
 ## Features
 
 - **MemPrivacy Boundary**: On-device privacy detection and typed placeholder replacement (PL2–PL4 taxonomy).
-- **Google Gemini API Integration**: Native support for Google Gemini (`gemini-2.5-flash`) with automatic local unmasking.
+- **Google Gemini API Integration**: Native support for Google Gemini (`gemini-3.6-flash`) with automatic local unmasking.
 - **Offline Deterministic Fallback**: Automatic fallback when no API key is provided.
 - **Adaptive Memory Importance**: Memory relevance promotion based on mention counts.
 - **OKF Concept Synchronization**: Automatic Markdown concept generation and `user-memory/index.md` linking.
