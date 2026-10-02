@@ -26,14 +26,14 @@ For Windows PowerShell:
 
 ```powershell
 $env:GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
-$env:GEMINI_MODEL="gemini-2.5-flash"  # Optional, default is gemini-2.5-flash
+$env:GEMINI_MODEL="gemini-3.6-flash"  # Optional, default is gemini-3.6-flash
 ```
 
 Or copy `.env.example` for reference:
 
 ```bash
 GEMINI_API_KEY=
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MODEL=gemini-3.6-flash
 ```
 
 > **Note**: Do not commit real API keys to repository. `.env` is listed in `.gitignore`.
